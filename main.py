@@ -8,10 +8,11 @@ def rx(s):
     
     "MY COMMAND <variable>" becomes "MY\s+COMMAND\s+(?P<variable>.*)"
     """
-    return (s
-            .replace("<", "(?P<")
-            .replace(">", ">.*)")
-            .replace(" ", r"\s+"))
+    return re.compile(s
+                      .replace("<", "(?P<")
+                      .replace(">", ">.*)")
+                      .replace(" ", r"\s+"),
+                      re.IGNORECASE)
 
 def buy(params):
     print("calling 'buy' with params: %s" % params)
@@ -32,7 +33,7 @@ COMMANDS = [
 
 def dispatch_command(line):
     for r, command in COMMANDS:
-        m = re.match(r, line)
+        m = r.match(line)
         if m is not None:
             params = m.groupdict()
             command(params)
@@ -45,4 +46,5 @@ if __name__ == "__main__":
             val = input("> ")
             dispatch_command(val)
         except KeyboardInterrupt:
-            pass
+            print("")
+            break
