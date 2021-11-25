@@ -32,11 +32,10 @@ COMMANDS = [
 ]
 
 def dispatch_command(line):
-    for r, command in COMMANDS:
-        m = r.match(line)
+    for pattern, command in COMMANDS:
+        m = pattern.match(line)
         if m is not None:
-            params = m.groupdict()
-            command(params)
+            command(m.groupdict())
             break
 
 if __name__ == "__main__":
