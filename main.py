@@ -20,6 +20,9 @@ def buy(params):
 def accept(params):
     print("calling 'accept' with params: %s" % params)
 
+def escrow(params):
+    print("calling 'escrow' with params: %s" % params)
+    
 COMMANDS = [
     (
         rx('BUY <sale_hash> FROM <seller_address> FOR <quanity> OF <currency>'),
@@ -28,7 +31,11 @@ COMMANDS = [
     (
         rx('ACCEPT <offer_hash>'),
         accept
-    )
+    ),
+    (
+        rx('ENTER <offer_hash> INTO ESCROW WITH <escrow_agent_address>'),
+        escrow
+    ),
 ]
 
 def dispatch_command(line):
