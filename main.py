@@ -13,21 +13,29 @@ def rx(s):
             .replace(">", ">.*)")
             .replace(" ", r"\s+"))
 
+def buy(params):
+    print("calling 'buy' with params: %s" % params)
+
+def accept(params):
+    print("calling 'accept' with params: %s" % params)
+
 COMMANDS = [
     (
         rx('BUY <sale_hash> FROM <seller_address> FOR <quanity> OF <currency>'),
-        "buy"
+        buy
+    ),
+    (
+        rx('ACCEPT <offer_hash>'),
+        accept
     )
 ]
 
 def dispatch_command(line):
-    for r, mode in COMMANDS:
+    for r, command in COMMANDS:
         m = re.match(r, line)
         if m is not None:
             params = m.groupdict()
-            print("mode: " + mode)
-            print("params: ")
-            pprint(params)
+            command(params)
             break
 
 if __name__ == "__main__":
