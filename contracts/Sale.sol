@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
 contract Sale {
-    // IMPORTANT: This is a one-shot contract. In practice _single_ simple contact should keep track
+    // IMPORTANT: This is a one-shot contract. In practice a _single_ simple contact should keep track
     // of buyer/seller/participant metrics on a per-sale basis. The other logic can be broken off
     // with different kinds of "delegation". This contract is a template for that "master" contact.
     // e.g. `buyer_happy` should a value we can get/set for any `(sale_hash, address)` tuple.
