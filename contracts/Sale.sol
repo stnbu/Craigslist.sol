@@ -1,6 +1,11 @@
 pragma solidity ^0.5.0;
 
 contract Sale {
+    // IMPORTANT: This is a one-shot contract. In practice _single_ simple contact should keep track
+    // of buyer/seller/participant metrics on a per-sale basis. The other logic can be broken off
+    // with different kinds of "delegation". This contract is a template for that "master" contact.
+    // e.g. `buyer_happy` should a value we can get/set for any `(sale_hash, address)` tuple.
+    // Roughly speaking.
 
     // This contract represents a "sale" in the real world.
     //
@@ -57,6 +62,8 @@ contract Sale {
     address public buyer_address;
     uint public offer;
     State public state;
+    bool public seller_happy;
+    bool public buyer_happy;
 
     modifier requireState(State _state) {
 	require (state == _state);
@@ -88,7 +95,18 @@ contract Sale {
 	seller_address = _seller_address;
 	buyer_address = msg.sender;
 	offer = _offer;
-	state = State.STARTED
+	state = State.STARTED;
+
+	// We start off with both the buyer and seller "happy".
+	// The next opportunity the buyer will have to set "happy" is upon his calling `finalize(bool)`.
+	// Until that time, the buyer has no reason to be _unhappy_. (really?)
+	// The next opportunity the seller will have to set this upon her calling `reject(bool)`.
+	// This can only happen if the state is STARTED. The seller may choose to abort the sale
+	// at any time while it is still in state STARTED, at which time they may choose to be
+	// "unhappy" (e.g. buyer is unreasable). Otherwise, the seller will get the agreed upon
+	// funds and has no real reason to be unhappy (really?).
+	seller_happy = true;
+	buyer_happy = true;
     }
 
     // there is no decrementOffer! It's impossible on purpose.
@@ -104,10 +122,24 @@ contract Sale {
 	// Race condition?
 	// What if the offer is incremented after the seller last sees it but before this gets called?
 	// Maybe the buyer is responsible for not letting that happen..?
+	//
+	// Q: Is this too implicit? Is it obvious that the item gets shipped now? If it is in state
+	// ACCEPTED, both the buyer and seller have _accepted_ that they must wrap up the sale...
 	state = State.ACCEPTED;
     }
 
-    function finalize() public requireState(State.ACCEPTED) buyerOnly() {
+    function finalize(bool happy) public requireState(State.ACCEPTED) buyerOnly() {
+	buyer_happy = happy;
+	
+	// When the buyer calls this it means: I have custody of "the item" OR I give up!
+	state = State.FINALIZED;
+    }
+
+    function reject(bool happy) public requireState(State.STARTED) sellerOnly() {
+	seller_happy = happy;
+
+	// Somewhere in here we need to release the funds to the seller.
+	
 	// When the buyer calls this it means: I have custody of "the item" OR I give up!
 	state = State.FINALIZED;
     }
