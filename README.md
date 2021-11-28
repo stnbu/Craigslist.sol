@@ -1,4 +1,4 @@
-% Craigslist.sol
+# Craigslist.sol
 
 This is a placeholder name! I don't like it either. Let us not dwell upon the bike shed's color.
 
