@@ -16,7 +16,7 @@ Smart contract logic can be incrementally extended to do other things:
 
 * Involve a contract-bound escrow service.
 * Participants can post a bond whose fate is subject to contract logic. This can be used to encourage/punish behavior.
-* The outcome of certain "phases" (e.g. escrow, haggling) can be arbitrarily abstracted by honoring the outcome of other contracts ("child" contracts? e.g, By calling `[0xCccCc..cC].getPrice(sale_hash)`, where parties both agree to use the outcome of this contract function.)
+* The outcome of certain "phases" (e.g. escrow, haggling) can be arbitrarily abstracted by honoring the outcome of other contracts ("child" contracts?) e.g by calling `[0xCccCc..cC].getPrice(sale_hash)`, where parties both agree to use the outcome of this contract function.)
 
 One _missing_ critical piece of all this: There needs to be a wallet based "chat" system that lets participants communicate in a signed (and probably encrypted) channel. This is "entirely possible"! Parties B and S need to be able to directly message one another, signing each message with their wallet key (even with a hardware wallet).
 
