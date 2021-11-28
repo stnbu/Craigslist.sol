@@ -15,6 +15,14 @@ contract Sale {
     //   currency: "wei"
     // });
     //
+    // or
+    //
+    // let sale_hash = hash(`
+    //   Please someone buy my stanky old green plush sofa!
+    //   Start a sale using contract 0xCccCc..Cc and I'll probably
+    //   approve any offer! I'll get your dorm number via SwarmChat. Thnxx!
+    // `);
+    //
     // The input can be anything at all! It only has meaning to the buyer and seller.
     // They both sign this hash! [tbd]
     //
