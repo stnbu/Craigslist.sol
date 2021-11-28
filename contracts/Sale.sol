@@ -125,7 +125,8 @@ contract Sale {
 	//
 	// Race condition?
 	// What if the offer is incremented after the seller last sees it but before this gets called?
-	// Maybe the buyer is responsible for not letting that happen..?
+	// Maybe the buyer is responsible for not letting that happen. The buyer is soley in control
+	// of `offer` incrementation.
 	//
 	// Q: Is this too implicit? Is it obvious that the item gets shipped now? If it is in state
 	// ACCEPTED, both the buyer and seller have _accepted_ that they must wrap up the sale...
@@ -133,18 +134,39 @@ contract Sale {
     }
 
     function finalize(bool happy) public requireState(State.ACCEPTED) buyerOnly() {
-	buyer_happy = happy;
-	
+	// This function is called by the buyer to indicate "the sale is complete on my end".
+
+	// Somewhere in here we need to release the funds to the seller.
+
 	// When the buyer calls this it means: I have custody of "the item" OR I give up!
+	// The buyer can be happy or unhappy for any number of reasons. All that is recorded
+	// is the boolean "happy" value. The buyer may indeed be unhappy because the item
+	// (despite sellers pleading) never arrived. These are the rules! (in this iteration)
+	// The buyer can only register "unhappy". This will be the glaring exception
+	// ecosystem-wide (hopes), and a seller's history should give enough inidcation of
+	// the risk (maybe you are buying something cheap!)
+	//
+	// Remember: Your interactions with Amazon and Ebay have _not_ been 100% happy.
+	// If you've used these systems much, you may have a 0.5% utterly-ripped-off rate.
+	// If you see a buyer with 9000 sales and a 99.5% happy rating, would you really hesitate
+	// to buy a $200 guitar from this person? Such persons exist, even on Ebay.
+	buyer_happy = happy;
 	state = State.FINALIZED;
     }
 
     function reject(bool happy) public requireState(State.STARTED) sellerOnly() {
-	seller_happy = happy;
+	// This function _can_ be called by the seller to abort a sale that is STARTED.
+	// [umm... doesn't the buyer need such a function?]
 
-	// Somewhere in here we need to release the funds to the seller.
-	
-	// When the buyer calls this it means: I have custody of "the item" OR I give up!
+	// Somewhere in here we need to release the funds to the buyer.
+
+	// When the seller calls this it means: "No deal". A reason is not given.
+	// If the seller wants to make an accusation against the buyer ("too cheap" or
+	// "just wants faberge eggs to smash them!") that can be done off chain, but all
+	// that gets recorded here is happy/unhappy. Unhappy is a mark against the buyer,
+	// so, given the "emergent" weight of an "unhappy", the seller will just use her
+	// discression.
+	seller_happy = happy;
 	state = State.FINALIZED;
     }
 }
