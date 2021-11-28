@@ -125,8 +125,7 @@ contract Sale {
 	//
 	// Race condition?
 	// What if the offer is incremented after the seller last sees it but before this gets called?
-	// Maybe the buyer is responsible for not letting that happen. The buyer is soley in control
-	// of `offer` incrementation.
+	// Maybe the buyer is responsible for not letting that happen. Only the buyer can `increment()`.
 	//
 	// Q: Is this too implicit? Is it obvious that the item gets shipped now? If it is in state
 	// ACCEPTED, both the buyer and seller have _accepted_ that they must wrap up the sale...
@@ -143,7 +142,7 @@ contract Sale {
 	// is the boolean "happy" value. The buyer may indeed be unhappy because the item
 	// (despite sellers pleading) never arrived. These are the rules! (in this iteration)
 	// The buyer can only register "unhappy". This will be the glaring exception
-	// ecosystem-wide (hopes), and a seller's history should give enough inidcation of
+	// ecosystem-wide (hopes), and a seller's history should give enough indication of
 	// the risk (maybe you are buying something cheap!)
 	//
 	// Remember: Your interactions with Amazon and Ebay have _not_ been 100% happy.
@@ -165,7 +164,7 @@ contract Sale {
 	// "just wants faberge eggs to smash them!") that can be done off chain, but all
 	// that gets recorded here is happy/unhappy. Unhappy is a mark against the buyer,
 	// so, given the "emergent" weight of an "unhappy", the seller will just use her
-	// discression.
+	// discretion.
 	seller_happy = happy;
 	state = State.FINALIZED;
     }
