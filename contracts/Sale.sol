@@ -98,12 +98,16 @@ contract Sale {
 	state = State.STARTED;
 
 	// We start off with both the buyer and seller "happy".
+	//
 	// The next opportunity the buyer will have to set "happy" is upon his calling `finalize(bool)`.
-	// Until that time, the buyer has no reason to be _unhappy_. (really?)
+	// Until that time, the buyer has no reason to be _unhappy_ (really?) This is the end of the sale.
+	// He may _be_ unhappy, but he has no right to record it until receipt of the item or when he gives
+	// up (in which case he has the right to set `happy=false`).
+	//
 	// The next opportunity the seller will have to set this upon her calling `reject(bool)`.
 	// This can only happen if the state is STARTED. The seller may choose to abort the sale
 	// at any time while it is still in state STARTED, at which time they may choose to be
-	// "unhappy" (e.g. buyer is unreasable). Otherwise, the seller will get the agreed upon
+	// "unhappy" (e.g. buyer is unreasonable). Otherwise, the seller will get the agreed upon
 	// funds and has no real reason to be unhappy (really?).
 	seller_happy = true;
 	buyer_happy = true;
