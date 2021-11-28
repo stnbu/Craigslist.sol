@@ -11,7 +11,7 @@ contract Sale {
     //
     // let sale_hash = hash({
     //   description: "Big Ol Green Sofa",
-    //   price: 0.01,
+    //   price: 20000000000000000,
     //   currency: "wei"
     // });
     //
