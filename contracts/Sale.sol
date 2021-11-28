@@ -56,8 +56,8 @@ contract Sale {
         DEPLOYED,
         STARTED,
         ACCEPTED,
-        FINALIZED,
-    };
+        FINALIZED
+    }
 
     bytes32 public sale_hash;
     address public seller_address;
@@ -82,7 +82,7 @@ contract Sale {
         _;
     }
 
-    function constructor() {
+    constructor() public {
         state = State.DEPLOYED;
     }
 
