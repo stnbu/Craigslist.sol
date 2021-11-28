@@ -61,9 +61,8 @@ contract Sale {
     }
 
     bytes32 public sale_hash;
-    address public seller_address;
-    address public buyer_address;
-    uint public offer;
+    address payable seller_address;
+    address payable buyer_address;
     State public state;
     bool public seller_happy;
     bool public buyer_happy;
@@ -90,7 +89,9 @@ contract Sale {
     // This could be `constructor` but that kind of breaks some symmetry: some
     // 3rd party deployed this contract ...let's pretend ...for no particular
     // reason.
-    function startSale(bytes32 _sale_hash, address _seller_address, uint _offer)
+    //
+    // Note that there is an implicit "current offer": the contract balance.
+    function startSale(bytes32 _sale_hash, address payable _seller_address)
         public payable requireState(State.DEPLOYED) {
         // Wait... we want a signature of the sale_hash by the buyer. Isn't this
         // the time to "collect it"? Wait! By calling this function, the buyer
@@ -98,7 +99,6 @@ contract Sale {
         sale_hash = _sale_hash;
         seller_address = _seller_address;
         buyer_address = msg.sender;
-        offer = _offer;
         state = State.STARTED;
 
         // We start off with both the buyer and seller "happy".
@@ -122,9 +122,9 @@ contract Sale {
     }
 
     // there is no decrementOffer! It's impossible on purpose.
-    function incrementOffer(uint increase)
+    function incrementOffer()
         public payable requireState(State.STARTED) buyerOnly() {
-        offer += increase;
+	// The contract balance goes up. That's all for now.
     }
 
     function acceptCurrentOffer() public requireState(State.STARTED)
@@ -149,7 +149,8 @@ contract Sale {
         // This function is called by the buyer to indicate "the sale is
         // complete on my end".
 
-        // Somewhere in here we need to release the funds to the seller.
+        // The seller gets the sales funds.
+	seller_address.transfer(address(this).balance);
 
         // When the buyer calls this it means: I have custody of "the item" OR I
         // give up!  The buyer can be happy or unhappy for any number of
@@ -174,7 +175,8 @@ contract Sale {
         // This function _can_ be called by the seller to abort a sale that is
         // STARTED.  [umm... doesn't the buyer need such a function?]
 
-        // Somewhere in here we need to release the funds to the buyer.
+	// Buyer gets all funds back.
+	buyer_address.transfer(address(this).balance);
 
         // When the seller calls this it means: "No deal". A reason is not
         // given.  If the seller wants to make an accusation against the buyer
