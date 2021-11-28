@@ -10,9 +10,9 @@ contract Sale {
     // something like, in pseudocode:
     //
     // let sale_hash = hash({
-    //   bytes32: sale_hash,
-    //   bytes32: item_hash,
-    //   uint: price
+    //   description: "Big Ol Green Sofa",
+    //   price: 0.01,
+    //   currency: "wei"
     // });
     //
     // The input can be anything at all! It only has meaning to the buyer and seller.
