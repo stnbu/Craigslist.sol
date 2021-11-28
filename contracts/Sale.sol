@@ -51,10 +51,10 @@ contract Sale {
     // until/unless revealed.
 
     enum State {
-	DEPLOYED,
-	STARTED,
-	ACCEPTED,
-	FINALIZED,
+        DEPLOYED,
+        STARTED,
+        ACCEPTED,
+        FINALIZED,
     };
 
     bytes32 public sale_hash;
@@ -66,106 +66,106 @@ contract Sale {
     bool public buyer_happy;
 
     modifier requireState(State _state) {
-	require (state == _state);
-	_;
+        require (state == _state);
+        _;
     }
 
     modifier buyerOnly() {
-	require (msg.sender == buyer_address);
-	_;
+        require (msg.sender == buyer_address);
+        _;
     }
 
     modifier sellerOnly() {
-	require (msg.sender == seller_address);
-	_;
+        require (msg.sender == seller_address);
+        _;
     }
 
     function constructor() {
-	state = State.DEPLOYED;
+        state = State.DEPLOYED;
     }
 
     // This could be `constructor` but that kind of breaks some symmetry: some 3rd party
     // deployed this contract ...let's pretend ...for no particular reason.
     function startSale(bytes32 _sale_hash, address _seller_address, uint _offer)
-	public payable requireState(State.DEPLOYED) {
-	// Wait... we want a signature of the sale_hash by the buyer. Isn't this the
-	// time to "collect it"? Wait! By calling this function, the buyer is literally
-	// signing the sale_hash...! (right?)
-	sale_hash = _sale_hash;
-	seller_address = _seller_address;
-	buyer_address = msg.sender;
-	offer = _offer;
-	state = State.STARTED;
+        public payable requireState(State.DEPLOYED) {
+        // Wait... we want a signature of the sale_hash by the buyer. Isn't this the
+        // time to "collect it"? Wait! By calling this function, the buyer is literally
+        // signing the sale_hash...! (right?)
+        sale_hash = _sale_hash;
+        seller_address = _seller_address;
+        buyer_address = msg.sender;
+        offer = _offer;
+        state = State.STARTED;
 
-	// We start off with both the buyer and seller "happy".
-	//
-	// The next opportunity the buyer will have to set "happy" is upon his calling `finalize(bool)`.
-	// Until that time, the buyer has no reason to be _unhappy_ (really?) This is the end of the sale.
-	// He may _be_ unhappy, but he has no right to record it until receipt of the item or when he gives
-	// up (in which case he has the right to set `happy=false`).
-	//
-	// The next opportunity the seller will have to set this upon her calling `reject(bool)`.
-	// This can only happen if the state is STARTED. The seller may choose to abort the sale
-	// at any time while it is still in state STARTED, at which time they may choose to be
-	// "unhappy" (e.g. buyer is unreasonable). Otherwise, the seller will get the agreed upon
-	// funds and has no real reason to be unhappy (really?).
-	seller_happy = true;
-	buyer_happy = true;
+        // We start off with both the buyer and seller "happy".
+        //
+        // The next opportunity the buyer will have to set "happy" is upon his calling `finalize(bool)`.
+        // Until that time, the buyer has no reason to be _unhappy_ (really?) This is the end of the sale.
+        // He may _be_ unhappy, but he has no right to record it until receipt of the item or when he gives
+        // up (in which case he has the right to set `happy=false`).
+        //
+        // The next opportunity the seller will have to set this upon her calling `reject(bool)`.
+        // This can only happen if the state is STARTED. The seller may choose to abort the sale
+        // at any time while it is still in state STARTED, at which time they may choose to be
+        // "unhappy" (e.g. buyer is unreasonable). Otherwise, the seller will get the agreed upon
+        // funds and has no real reason to be unhappy (really?).
+        seller_happy = true;
+        buyer_happy = true;
     }
 
     // there is no decrementOffer! It's impossible on purpose.
     function incrementOffer(uint increase)
-	public payable requireState(State.STARTED) buyerOnly() {
-	offer += increase;
+        public payable requireState(State.STARTED) buyerOnly() {
+        offer += increase;
     }
 
     function acceptCurrentOffer() public requireState(State.STARTED) sellerOnly() {
-	// When the seller calls this function, it means: Seller has agreed to everything and will
-	// now transfer "the item" (e.g. put it in box and ship it.)
-	//
-	// Race condition?
-	// What if the offer is incremented after the seller last sees it but before this gets called?
-	// Maybe the buyer is responsible for not letting that happen. Only the buyer can `increment()`.
-	//
-	// Q: Is this too implicit? Is it obvious that the item gets shipped now? If it is in state
-	// ACCEPTED, both the buyer and seller have _accepted_ that they must wrap up the sale...
-	state = State.ACCEPTED;
+        // When the seller calls this function, it means: Seller has agreed to everything and will
+        // now transfer "the item" (e.g. put it in box and ship it.)
+        //
+        // Race condition?
+        // What if the offer is incremented after the seller last sees it but before this gets called?
+        // Maybe the buyer is responsible for not letting that happen. Only the buyer can `increment()`.
+        //
+        // Q: Is this too implicit? Is it obvious that the item gets shipped now? If it is in state
+        // ACCEPTED, both the buyer and seller have _accepted_ that they must wrap up the sale...
+        state = State.ACCEPTED;
     }
 
     function finalize(bool happy) public requireState(State.ACCEPTED) buyerOnly() {
-	// This function is called by the buyer to indicate "the sale is complete on my end".
+        // This function is called by the buyer to indicate "the sale is complete on my end".
 
-	// Somewhere in here we need to release the funds to the seller.
+        // Somewhere in here we need to release the funds to the seller.
 
-	// When the buyer calls this it means: I have custody of "the item" OR I give up!
-	// The buyer can be happy or unhappy for any number of reasons. All that is recorded
-	// is the boolean "happy" value. The buyer may indeed be unhappy because the item
-	// (despite sellers pleading) never arrived. These are the rules! (in this iteration)
-	// The buyer can only register "unhappy". This will be the glaring exception
-	// ecosystem-wide (hopes), and a seller's history should give enough indication of
-	// the risk (maybe you are buying something cheap!)
-	//
-	// Remember: Your interactions with Amazon and Ebay have _not_ been 100% happy.
-	// If you've used these systems much, you may have a 0.5% utterly-ripped-off rate.
-	// If you see a buyer with 9000 sales and a 99.5% happy rating, would you really hesitate
-	// to buy a $200 guitar from this person? Such persons exist, even on Ebay.
-	buyer_happy = happy;
-	state = State.FINALIZED;
+        // When the buyer calls this it means: I have custody of "the item" OR I give up!
+        // The buyer can be happy or unhappy for any number of reasons. All that is recorded
+        // is the boolean "happy" value. The buyer may indeed be unhappy because the item
+        // (despite sellers pleading) never arrived. These are the rules! (in this iteration)
+        // The buyer can only register "unhappy". This will be the glaring exception
+        // ecosystem-wide (hopes), and a seller's history should give enough indication of
+        // the risk (maybe you are buying something cheap!)
+        //
+        // Remember: Your interactions with Amazon and Ebay have _not_ been 100% happy.
+        // If you've used these systems much, you may have a 0.5% utterly-ripped-off rate.
+        // If you see a buyer with 9000 sales and a 99.5% happy rating, would you really hesitate
+        // to buy a $200 guitar from this person? Such persons exist, even on Ebay.
+        buyer_happy = happy;
+        state = State.FINALIZED;
     }
 
     function reject(bool happy) public requireState(State.STARTED) sellerOnly() {
-	// This function _can_ be called by the seller to abort a sale that is STARTED.
-	// [umm... doesn't the buyer need such a function?]
+        // This function _can_ be called by the seller to abort a sale that is STARTED.
+        // [umm... doesn't the buyer need such a function?]
 
-	// Somewhere in here we need to release the funds to the buyer.
+        // Somewhere in here we need to release the funds to the buyer.
 
-	// When the seller calls this it means: "No deal". A reason is not given.
-	// If the seller wants to make an accusation against the buyer ("too cheap" or
-	// "just wants faberge eggs to smash them!") that can be done off chain, but all
-	// that gets recorded here is happy/unhappy. Unhappy is a mark against the buyer,
-	// so, given the "emergent" weight of an "unhappy", the seller will just use her
-	// discretion.
-	seller_happy = happy;
-	state = State.FINALIZED;
+        // When the seller calls this it means: "No deal". A reason is not given.
+        // If the seller wants to make an accusation against the buyer ("too cheap" or
+        // "just wants faberge eggs to smash them!") that can be done off chain, but all
+        // that gets recorded here is happy/unhappy. Unhappy is a mark against the buyer,
+        // so, given the "emergent" weight of an "unhappy", the seller will just use her
+        // discretion.
+        seller_happy = happy;
+        state = State.FINALIZED;
     }
 }
