@@ -126,7 +126,8 @@ contract Sale {
         offer += increase;
     }
 
-    function acceptCurrentOffer() public requireState(State.STARTED) sellerOnly() {
+    function acceptCurrentOffer() public requireState(State.STARTED)
+	sellerOnly() {
         // When the seller calls this function, it means: Seller has agreed to
         // everything and will now transfer "the item" (e.g. put it in box and
         // ship it.)
@@ -167,7 +168,8 @@ contract Sale {
         state = State.FINALIZED;
     }
 
-    function reject(bool happy) public requireState(State.STARTED) sellerOnly() {
+    function reject(bool happy) public requireState(State.STARTED)
+	sellerOnly() {
         // This function _can_ be called by the seller to abort a sale that is
         // STARTED.  [umm... doesn't the buyer need such a function?]
 
