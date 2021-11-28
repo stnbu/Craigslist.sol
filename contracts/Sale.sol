@@ -81,7 +81,7 @@ contract Sale {
     }
 
     function constructor() {
-	state = State.OPEN;
+	state = State.DEPLOYED;
     }
 
     // This could be `constructor` but that kind of breaks some symmetry: some 3rd party
