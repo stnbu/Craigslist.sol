@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 
 contract Sale {
 
-    // This conract represents a "sale" in the real world.
+    // This contract represents a "sale" in the real world.
     //
     // But it must have data to represent the various "terms" of the sale.
     //
@@ -31,7 +31,7 @@ contract Sale {
     // That would eliminate: Buyer signs a self-serving sale hash, gets seller drunk (in-person) and
     // convinces her to do the same. Showing that the seller has the first-known signature of the
     // `sale_hash` would support a claim by the buyer that the seller was the sale's /author/.
-    // Note that this can all happen independant of this contract. If the escrower calls for such
+    // Note that this can all happen independent of this contract. If the escrower calls for such
     // proof, the buyer and seller may or may not have arranged for this. Escrower just knows: sale_hash
 
     // The `sale_hash` can indeed be random data! To every other party, it's just xxx bits of data
@@ -65,7 +65,7 @@ contract Sale {
 	_;
     }
 
-    function contructor() {
+    function constructor() {
 	state = State.OPEN;
     }
 
