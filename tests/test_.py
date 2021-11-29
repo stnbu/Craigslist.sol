@@ -70,3 +70,9 @@ def test_accept(started):
     # to reject.
     with brownie.reverts():
         sale_contract.reject(True, {'from': seller})
+
+def test_reject(started):
+    # The seller rejects this STARTED sale with happy=False
+    sale_contract.reject(False, {'from': seller})
+    assert sale_contract.seller_happy() == False
+    assert sale_contract.buyer_happy() == True
