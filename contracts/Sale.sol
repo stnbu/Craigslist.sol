@@ -67,6 +67,10 @@ contract Sale {
     bool public seller_happy;
     bool public buyer_happy;
 
+    // TBD
+    uint internal blocks_to_live;
+    uint internal deployed_block;
+
     modifier requireState(State _state) {
         require (state == _state);
         _;
@@ -104,6 +108,10 @@ contract Sale {
 	// And we are in state "DEPLOYED" (we have to pick something. got a
 	// better name?)
         state = State.DEPLOYED;
+
+	// TBD
+	blocks_to_live = 3153600; // about a year: `365 * 24 * 60 * 60 / 10` ... right?
+	deployed_block = block.number;
     }
 
     // This could be `constructor` but that kind of breaks some symmetry: some
@@ -113,10 +121,7 @@ contract Sale {
     // Note that there is an implicit "current offer": the contract balance.
     function startSale(bytes32 _sale_hash, address payable _seller_address)
         public payable requireState(State.DEPLOYED) {
-        // Wait... we want a signature of the sale_hash by the buyer. Isn't this
-        // the time to "collect it"? Wait! By calling this function, the buyer
-        // is literally signing the sale_hash...! (right?)
-        sale_hash = _sale_hash;
+        sale_hash = _sale_hash; // the buyer has now signed the sale_hash
         seller_address = _seller_address;
         buyer_address = msg.sender;
         state = State.STARTED;
@@ -130,6 +135,11 @@ contract Sale {
 
     function acceptCurrentOffer() public requireState(State.STARTED)
 	sellerOnly() {
+	// At this point, the seller has implicitly signed the sale_hash: she
+	// signed the transaction for this function call on a version of this
+	// contract that already had sale_hash set -- available for inspection.
+	// (does this hold water?)
+	//
         // When the seller calls this function, it means: Seller has agreed to
         // everything and will now transfer "the item" (e.g. put it in box and
         // ship it.)
@@ -149,10 +159,7 @@ contract Sale {
 	buyerOnly() {
         // This function is called by the buyer to indicate "the sale is
         // complete on my end".
-
-        // The seller gets the sales funds.
-	seller_address.transfer(address(this).balance);
-
+	//
         // When the buyer calls this it means: I have custody of "the item" OR I
         // give up!  The buyer can be happy or unhappy for any number of
         // reasons. All that is recorded is the boolean "happy" value. The buyer
@@ -169,24 +176,27 @@ contract Sale {
         // from this person? Such persons exist, even on Ebay.
         buyer_happy = happy;
         state = State.FINALIZED;
+        // The seller gets the sales funds. If this is an un-payable contract
+	// address, too bad; the sale is now finalized.
+	seller_address.transfer(address(this).balance);
     }
 
-    function reject(bool happy) public requireState(State.STARTED)
-	sellerOnly() {
-        // This function _can_ be called by the seller to abort a sale that is
-        // STARTED.  [umm... doesn't the buyer need such a function?]
+    function reject(bool happy) public requireState(State.STARTED) {
+	// This function can be called before ACCEPTED by either party. The
+	// happiness is recorded as appropriate. The funds go back to the buyer
+	// regardless of the caller.
 
-	// Buyer gets all funds back.
-	buyer_address.transfer(address(this).balance);
+	if (msg.sender == buyer_address) {
+	    buyer_happy = happy;
+	} else if (msg.sender == seller_address) {
+	    seller_happy = happy;
+	} else {
+	    revert();
+	}
 
-        // When the seller calls this it means: "No deal". A reason is not
-        // given.  If the seller wants to make an accusation against the buyer
-        // ("too cheap" or "just wants faberge eggs to smash them!") that can be
-        // done off chain, but all that gets recorded here is
-        // happy/unhappy. Unhappy is a mark against the buyer, so, given the
-        // "emergent" weight of an "unhappy", the seller will just use her
-        // discretion.
-        seller_happy = happy;
         state = State.FINALIZED;
+        // The buyer gets the sales funds. If this is an un-payable contract
+	// address, too bad; the sale is now finialized.
+	buyer_address.transfer(address(this).balance);
     }
 }
