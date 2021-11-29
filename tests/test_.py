@@ -35,6 +35,7 @@ def test_constructor(params):
     assert sale_contract.state() == DEPLOYED
 
 def test_blind_call_to_accept(params):
+    assert sale_contract.state() == DEPLOYED
     with brownie.reverts():
         # This call should revert because
         #   1. state!=STARTED
