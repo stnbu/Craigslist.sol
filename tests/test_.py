@@ -5,6 +5,12 @@ import brownie
 from brownie import Sale, accounts
 from brownie.test import strategy
 
+# State enum values. These need to account for any solidity changes.
+DEPLOYED = 0
+STARTED = 1
+ACCEPTED = 2
+FINALIZED = 3
+
 def fhex(n):
     return '0x' + n.hex()
 
@@ -23,9 +29,10 @@ def params():
     }
     globals().update(testing_variables)
 
-def test_initial_happiness(params):
+def test_constructor(params):
     assert sale_contract.buyer_happy() == True
     assert sale_contract.seller_happy() == True
+    assert sale_contract.state() == DEPLOYED
 
 def test_blind_call_to_accept(params):
     with brownie.reverts():
@@ -37,3 +44,4 @@ def test_blind_call_to_accept(params):
 def test_start(params):
     sale_contract.startSale(sale_hash, seller) ## WHO?
     assert sale_contract.sale_hash() == fhex(sale_hash)
+    assert sale_contract.state() == STARTED
