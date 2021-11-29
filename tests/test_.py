@@ -36,11 +36,12 @@ def test_constructor(params):
 
 def test_blind_call_to_accept(params):
     assert sale_contract.state() == DEPLOYED
-    with brownie.reverts():
+    for wallet in [deployer, seller, buyer]:
         # This call should revert because
         #   1. state!=STARTED
-        #   2. account[0] is not "seller_address"
-        sale_contract.acceptCurrentOffer()
+        #   2. seller_address is uninitialized
+        with brownie.reverts():
+            sale_contract.acceptCurrentOffer({'from': wallet})
 
 def test_start(params):
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
