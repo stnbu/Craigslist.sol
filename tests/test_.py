@@ -4,6 +4,7 @@ import pytest
 import brownie
 from brownie import Sale, accounts
 from brownie.test import strategy
+from brownie.convert.datatypes import Wei
 
 # State enum values. These need to account for any solidity changes.
 DEPLOYED = 0
@@ -25,6 +26,7 @@ def params():
         'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                       b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
+        'initial_offer': Wei('3 ether'),
     }
     globals().update(testing_variables)
 
@@ -37,7 +39,7 @@ def deployed(params):
 def started(params):
     testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
     globals().update(testing_variables)
-    sale_contract.startSale(sale_hash, seller, {'from': buyer})
+    sale_contract.startSale(sale_hash, seller, {'from': buyer, 'value': initial_offer})
 
 @pytest.fixture
 def accepted(params):
@@ -83,6 +85,15 @@ def test_reject(started):
     sale_contract.reject(False, {'from': seller})
     assert sale_contract.seller_happy() == False
     assert sale_contract.buyer_happy() == True
+
+def test_increment(started):
+    # The seller cannot increment
+    with brownie.reverts():
+        sale_contract.incrementOffer({'from': seller})
+    assert sale_contract.balance() == initial_offer
+    increment = Wei('1 ether')
+    sale_contract.incrementOffer({'from': buyer, 'value': increment})
+    assert sale_contract.balance() == initial_offer + increment
 
 def test_finalize(accepted):
     sale_contract.finalize(False, {'from': buyer})
