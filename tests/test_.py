@@ -39,6 +39,7 @@ def started(params):
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
 
+@pytest.fixture
 def accepted(params):
     testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
     globals().update(testing_variables)
