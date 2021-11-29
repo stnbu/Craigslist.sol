@@ -39,6 +39,12 @@ def started(params):
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
 
+def accepted(params):
+    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    globals().update(testing_variables)
+    sale_contract.startSale(sale_hash, seller, {'from': buyer})
+    sale_contract.acceptCurrentOffer({'from': seller})
+
 def test_constructor(deployed):
     assert sale_contract.buyer_happy() == True
     assert sale_contract.seller_happy() == True
@@ -76,3 +82,8 @@ def test_reject(started):
     sale_contract.reject(False, {'from': seller})
     assert sale_contract.seller_happy() == False
     assert sale_contract.buyer_happy() == True
+
+def test_finalize(accepted):
+    sale_contract.finalize(False, {'from': buyer})
+    assert sale_contract.seller_happy() == True
+    assert sale_contract.buyer_happy() == False
