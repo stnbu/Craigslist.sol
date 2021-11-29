@@ -66,3 +66,7 @@ def test_accept(started):
         sale_contract.acceptCurrentOffer({'from': buyer})
     sale_contract.acceptCurrentOffer({'from': seller})
     assert sale_contract.state() == ACCEPTED
+    # The state is now ACCEPTED: no one, including the seller should be able
+    # to reject.
+    with brownie.reverts():
+        sale_contract.reject(True, {'from': seller})
