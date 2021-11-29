@@ -83,24 +83,6 @@ contract Sale {
     }
 
     constructor() public {
-        state = State.DEPLOYED;
-    }
-
-    // This could be `constructor` but that kind of breaks some symmetry: some
-    // 3rd party deployed this contract ...let's pretend ...for no particular
-    // reason.
-    //
-    // Note that there is an implicit "current offer": the contract balance.
-    function startSale(bytes32 _sale_hash, address payable _seller_address)
-        public payable requireState(State.DEPLOYED) {
-        // Wait... we want a signature of the sale_hash by the buyer. Isn't this
-        // the time to "collect it"? Wait! By calling this function, the buyer
-        // is literally signing the sale_hash...! (right?)
-        sale_hash = _sale_hash;
-        seller_address = _seller_address;
-        buyer_address = msg.sender;
-        state = State.STARTED;
-
         // We start off with both the buyer and seller "happy".
         //
         // The next opportunity the buyer will have to set "happy" is upon his
@@ -119,6 +101,25 @@ contract Sale {
         // (really?).
         seller_happy = true;
         buyer_happy = true;
+	// And we are in state "DEPLOYED" (we have to pick something. got a
+	// better name?)
+        state = State.DEPLOYED;
+    }
+
+    // This could be `constructor` but that kind of breaks some symmetry: some
+    // 3rd party deployed this contract ...let's pretend ...for no particular
+    // reason.
+    //
+    // Note that there is an implicit "current offer": the contract balance.
+    function startSale(bytes32 _sale_hash, address payable _seller_address)
+        public payable requireState(State.DEPLOYED) {
+        // Wait... we want a signature of the sale_hash by the buyer. Isn't this
+        // the time to "collect it"? Wait! By calling this function, the buyer
+        // is literally signing the sale_hash...! (right?)
+        sale_hash = _sale_hash;
+        seller_address = _seller_address;
+        buyer_address = msg.sender;
+        state = State.STARTED;
     }
 
     // there is no decrementOffer! It's impossible on purpose.
