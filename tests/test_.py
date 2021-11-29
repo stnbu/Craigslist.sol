@@ -80,11 +80,17 @@ def test_accept(started):
     with brownie.reverts():
         sale_contract.reject(True, {'from': seller})
 
-def test_reject(started):
+def test_reject_seller(started):
     # The seller rejects this STARTED sale with happy=False
     sale_contract.reject(False, {'from': seller})
     assert sale_contract.seller_happy() == False
     assert sale_contract.buyer_happy() == True
+
+def test_reject_buyer(started):
+    # The seller rejects this STARTED sale with happy=False
+    sale_contract.reject(False, {'from': buyer})
+    assert sale_contract.seller_happy() == True
+    assert sale_contract.buyer_happy() == False
 
 def test_increment(started):
     # The seller cannot increment
