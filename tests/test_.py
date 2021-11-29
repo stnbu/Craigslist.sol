@@ -14,7 +14,7 @@ FINALIZED = 3
 def fhex(n):
     return '0x' + n.hex()
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture
 def params():
     # MAGIC HACK: these are "injected" via a globals update.
     testing_variables = {
@@ -25,23 +25,29 @@ def params():
         'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                       b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
-        'sale_contract': accounts[0].deploy(Sale),
     }
     globals().update(testing_variables)
 
 @pytest.fixture
+def deployed(params):
+    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    globals().update(testing_variables)
+
+@pytest.fixture
 def started(params):
+    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
 
-def test_constructor():
+def test_constructor(deployed):
     assert sale_contract.buyer_happy() == True
     assert sale_contract.seller_happy() == True
     assert sale_contract.state() == DEPLOYED
 
-def test_blind_call_to_accept():
+def test_blind_call_to_accept(deployed):
     assert sale_contract.state() == DEPLOYED
     for wallet in [deployer, seller, buyer]:  # Try three wallets, because.
-        # This call should revert because
+        # This should revert because
         #   1. state!=STARTED
         #   2. seller_address is uninitialized
         with brownie.reverts():
@@ -52,3 +58,11 @@ def test_started_state(started):
     assert sale_contract.seller_address() == seller.address
     assert sale_contract.buyer_address() == buyer.address
     assert sale_contract.state() == STARTED
+
+def test_accept(started):
+    # This should revert. We are in the right `state` but the buyer
+    # should not be able to accept.
+    with brownie.reverts():
+        sale_contract.acceptCurrentOffer({'from': buyer})
+    sale_contract.acceptCurrentOffer({'from': seller})
+    assert sale_contract.state() == ACCEPTED
