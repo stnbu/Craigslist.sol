@@ -29,6 +29,10 @@ def params():
     }
     globals().update(testing_variables)
 
+@pytest.fixture
+def started(params):
+    sale_contract.startSale(sale_hash, seller, {'from': buyer})
+
 def test_constructor():
     assert sale_contract.buyer_happy() == True
     assert sale_contract.seller_happy() == True
@@ -43,8 +47,7 @@ def test_blind_call_to_accept():
         with brownie.reverts():
             sale_contract.acceptCurrentOffer({'from': wallet})
 
-def test_start():
-    sale_contract.startSale(sale_hash, seller, {'from': buyer})
+def test_started_state(started):
     assert sale_contract.sale_hash() == fhex(sale_hash)
     assert sale_contract.seller_address() == seller.address
     assert sale_contract.buyer_address() == buyer.address
