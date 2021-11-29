@@ -61,8 +61,8 @@ contract Sale {
     }
 
     bytes32 public sale_hash;
-    address payable seller_address;
-    address payable buyer_address;
+    address payable public seller_address;
+    address payable public buyer_address;
     State public state;
     bool public seller_happy;
     bool public buyer_happy;
