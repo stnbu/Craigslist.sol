@@ -42,6 +42,14 @@ def test_blind_call_to_accept(params):
         sale_contract.acceptCurrentOffer()
 
 def test_start(params):
+    """
+        sale_hash = _sale_hash;
+        seller_address = _seller_address;
+        buyer_address = msg.sender;
+        state = State.STARTED;
+"""
     sale_contract.startSale(sale_hash, seller) ## WHO?
     assert sale_contract.sale_hash() == fhex(sale_hash)
+    assert sale_contract.seller_address() == seller
+    assert sale_contract.buyer_address() == buyer
     assert sale_contract.state() == STARTED
