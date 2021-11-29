@@ -5,13 +5,13 @@ import brownie
 from brownie import Sale, accounts
 from brownie.test import strategy
 
-def to_hex(n):
+def fhex(n):
     return '0x' + n.hex()
 
 @pytest.fixture
 def params():
     # MAGIC HACK: these are "injected" via a globals update.
-    params = {
+    testing_variables = {
         'deployer': accounts[0],
         'buyer': accounts[1],
         'seller': accounts[2],
@@ -21,7 +21,7 @@ def params():
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
         'sale_contract': accounts[0].deploy(Sale),
     }
-    globals().update(params)
+    globals().update(testing_variables)
 
 def test_initial_happiness(params):
     assert sale_contract.buyer_happy() == True
@@ -36,4 +36,4 @@ def test_blind_call_to_accept(params):
 
 def test_start(params):
     sale_contract.startSale(sale_hash, seller) ## WHO?
-    assert sale_contract.sale_hash() == to_hex(sale_hash)
+    assert sale_contract.sale_hash() == fhex(sale_hash)
