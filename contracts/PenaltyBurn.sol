@@ -1,8 +1,14 @@
 pragma solidity ^0.5.0;
 
 contract PenaltyBurn {
-    // Hello! I am a clone of `Sale` (from Sale.sol).
-    // I'm just here as a starting point. I don't burn penalties just yet.
+    // NOTE: All these ugly `seller_foo` and `buyer_foo` variables would
+    // ideally be stored in a data structure indexed by `sale_hash`. Making this
+    // hopefully a "deployment of the network" rather than "a deployment of a
+    // sale".
+    //
+    // This contract has the concept of "deposits". For PoC simplicity purposes,
+    // we will assume that participation requires a deposit of 100% or more of
+    // the offer amount.
 
     enum State {
         DEPLOYED,
@@ -15,8 +21,11 @@ contract PenaltyBurn {
     address payable public seller_address;
     address payable public buyer_address;
     State public state;
-    bool public seller_happy;
-    bool public buyer_happy;
+    uint public offer;
+    uint public seller_deposit;
+    uint public buyer_deposit;
+
+    address payable constant ZERO_ADDRESS = address(0);
 
     modifier requireState(State _state) {
         require (state == _state);
@@ -34,45 +43,84 @@ contract PenaltyBurn {
     }
 
     constructor() public {
-        seller_happy = true;
-        buyer_happy = true;
         state = State.DEPLOYED;
     }
 
-    function startSale(bytes32 _sale_hash, address payable _seller_address)
+    function startSale(bytes32 _sale_hash, address payable _seller_address, uint _deposit)
         public payable requireState(State.DEPLOYED) {
+        if (_deposit < msg.value / 2) {
+            revert();
+        }
         sale_hash = _sale_hash;
         seller_address = _seller_address;
         buyer_address = msg.sender;
+        buyer_deposit = _deposit;
+        offer = msg.value - buyer_deposit;
         state = State.STARTED;
     }
 
-    function incrementOffer()
-        public payable requireState(State.STARTED) buyerOnly() {
+    function incrementOffer(uint _deposit_increment) public payable
+        requireState(State.STARTED) buyerOnly() {
+
+        if (offer + msg.value - _deposit_increment <
+            buyer_deposit + _deposit_increment) {
+            revert();
+        }
+        buyer_deposit += _deposit_increment;
+        offer += msg.value - _deposit_increment;
     }
 
-    function acceptCurrentOffer() public requireState(State.STARTED)
-	sellerOnly() {
+    function acceptCurrentOffer(uint _deposit) public payable
+        requireState(State.STARTED) sellerOnly() {
+
+        if (_deposit < offer) {
+            revert();
+        }
+        seller_deposit = _deposit;
         state = State.ACCEPTED;
     }
 
-    function finalize(bool happy) public requireState(State.ACCEPTED)
-	buyerOnly() {
-        buyer_happy = happy;
+    function finalize(int penalty_burn) public requireState(State.ACCEPTED)
+        buyerOnly() {
+
+        if (uint(0-penalty_burn) > buyer_deposit) {
+            revert();
+        }
+
+        if (penalty_burn != 0) {
+            if (penalty_burn < 0) {
+                ZERO_ADDRESS.transfer(uint(0-penalty_burn));
+            } else {
+                seller_address.transfer(uint(penalty_burn));
+            }
+        }
         state = State.FINALIZED;
-	seller_address.transfer(address(this).balance);
+        seller_address.transfer(offer + seller_deposit);
+        buyer_address.transfer(buyer_deposit - uint(0-penalty_burn));
+        assert(address(this).balance == 0);
     }
 
-    function reject(bool happy) public requireState(State.STARTED) {
-	if (msg.sender == buyer_address) {
-	    buyer_happy = happy;
-	} else if (msg.sender == seller_address) {
-	    seller_happy = happy;
-	} else {
-	    revert();
-	}
+    function reject(uint penalty_burn) public requireState(State.STARTED) {
         state = State.FINALIZED;
-	buyer_address.transfer(address(this).balance);
+        if (msg.sender == buyer_address) {
+            if (penalty_burn < 0) {
+                ZERO_ADDRESS.transfer(uint(0-penalty_burn));
+            } else if (penalty_burn > 0) {
+                seller_address.transfer(penalty_burn);
+            }
+            seller_address.transfer(seller_deposit);
+            buyer_address.transfer(offer + buyer_deposit - uint(0-penalty_burn));
+        } else if (msg.sender == seller_address) {
+            if (penalty_burn < 0) {
+                address(ZERO_ADDRESS).transfer(0-penalty_burn);
+            } else if (penalty_burn > 0) {
+                buyer_address.transfer(penalty_burn);
+            }
+            seller_address.transfer(seller_deposit - 0-penalty_burn);
+            buyer_address.transfer(offer + buyer_deposit);
+        } else {
+            revert();
+        }
+        assert(address(this).balance == 0);
     }
 }
-
