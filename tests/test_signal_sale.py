@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import pytest
-import brownie
-from brownie import SignalSale, accounts
-from brownie.test import strategy
-from brownie.convert.datatypes import Wei
+from brownie import SignalSale, accounts, reverts
 
 # State enum values. These need to account for any solidity changes.
 DEPLOYED = 0
@@ -65,7 +62,7 @@ def test_blind_call_to_accept(deployed):
     # This should revert because
     #   1. state!=STARTED
     #   2. seller_address is uninitialized
-    with brownie.reverts():
+    with reverts():
         sale_contract.accept({'from': seller, 'value': initial_offer})
 
 def test_state_started(started):

@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import pytest
-import brownie
-from brownie import Sale, accounts
-from brownie.test import strategy
-from brownie.convert.datatypes import Wei
+from brownie import Sale, accounts, reverts
 
 # State enum values. These need to account for any solidity changes.
 DEPLOYED = 0
@@ -26,24 +23,24 @@ def params():
         'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                       b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
-        'initial_offer': Wei('0.001 ether'),
+        'initial_offer': 1,
     }
     globals().update(testing_variables)
 
 @pytest.fixture
 def deployed(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    testing_variables = {'sale_contract': deployer.deploy(Sale)}
     globals().update(testing_variables)
 
 @pytest.fixture
 def started(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    testing_variables = {'sale_contract': deployer.deploy(Sale)}
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer, 'value': initial_offer})
 
 @pytest.fixture
 def accepted(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(Sale)}
+    testing_variables = {'sale_contract': deployer.deploy(Sale)}
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
     sale_contract.acceptCurrentOffer({'from': seller})
@@ -59,7 +56,7 @@ def test_blind_call_to_accept(deployed):
         # This should revert because
         #   1. state!=STARTED
         #   2. seller_address is uninitialized
-        with brownie.reverts():
+        with reverts():
             sale_contract.acceptCurrentOffer({'from': wallet})
 
 def test_started_state(started):
@@ -71,13 +68,13 @@ def test_started_state(started):
 def test_accept(started):
     # This should revert. We are in the right `state` but the buyer
     # should not be able to accept.
-    with brownie.reverts():
+    with reverts():
         sale_contract.acceptCurrentOffer({'from': buyer})
     sale_contract.acceptCurrentOffer({'from': seller})
     assert sale_contract.state() == ACCEPTED
     # The state is now ACCEPTED: no one, including the seller should be able
     # to reject.
-    with brownie.reverts():
+    with reverts():
         sale_contract.reject(True, {'from': seller})
 
 def test_reject_seller(started):
@@ -99,10 +96,10 @@ def test_reject_buyer(started):
 
 def test_increment(started):
     # The seller cannot increment
-    with brownie.reverts():
+    with reverts():
         sale_contract.incrementOffer({'from': seller})
     assert sale_contract.balance() == initial_offer
-    increment = Wei('0.0001 ether')
+    increment = 1
     sale_contract.incrementOffer({'from': buyer, 'value': increment})
     assert sale_contract.balance() == initial_offer + increment
 
