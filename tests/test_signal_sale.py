@@ -50,9 +50,8 @@ def started(params):
 def accepted(params):
     testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
     globals().update(testing_variables)
-    # FIXME: broken, obviously.
-    sale_contract.startSale(sale_hash, seller, {'from': buyer})
-    sale_contract.acceptCurrentOffer({'from': seller})
+    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
+    sale_contract.accept({'from': seller, 'value': initial_deposit})
 
 def test_constructor(deployed):
     assert sale_contract.seller_address() == '0x' + '0' * 40
@@ -69,11 +68,20 @@ def test_blind_call_to_accept(deployed):
     with brownie.reverts():
         sale_contract.accept({'from': seller, 'value': initial_offer})
 
-def test_started_state(started):
+def test_state_started(started):
     assert sale_contract.sale_hash() == fhex(sale_hash)
     assert sale_contract.seller_address() == seller.address
     assert sale_contract.buyer_address() == buyer.address
     assert sale_contract.state() == STARTED
     assert sale_contract.offer() == initial_offer
     assert sale_contract.seller_deposit() == 0
+    assert sale_contract.buyer_deposit() == initial_deposit
+
+def test_state_accepted(accepted):
+    assert sale_contract.sale_hash() == fhex(sale_hash)
+    assert sale_contract.seller_address() == seller.address
+    assert sale_contract.buyer_address() == buyer.address
+    assert sale_contract.state() == ACCEPTED
+    assert sale_contract.offer() == initial_offer
+    assert sale_contract.seller_deposit() == initial_deposit
     assert sale_contract.buyer_deposit() == initial_deposit
