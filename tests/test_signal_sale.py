@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import itertools
 import pytest
 from brownie import SignalSale, accounts, reverts
 
@@ -50,6 +51,14 @@ def accepted(params):
     sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
     sale_contract.accept({'from': seller, 'value': initial_deposit})
 
+@pytest.fixture
+def finalized(params):
+    testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
+    globals().update(testing_variables)
+    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
+    sale_contract.accept({'from': seller, 'value': initial_deposit})
+    sale_contract.finalize(0, True, {'from': buyer})
+
 def test_constructor(deployed):
     assert sale_contract.seller_address() == '0x' + '0' * 40
     assert sale_contract.buyer_address() == '0x' + '0' * 40
@@ -57,6 +66,10 @@ def test_constructor(deployed):
     assert sale_contract.offer() == 0;
     assert sale_contract.buyer_deposit() == 0;
     assert sale_contract.seller_deposit() == 0;
+
+def test_start_deposit_too_small(deployed):
+    with reverts():
+        sale_contract.start(sale_hash, seller, initial_deposit - 1, {'from': buyer, 'value': initial_send})
 
 def test_blind_call_to_accept(deployed):
     # This should revert because
@@ -74,11 +87,36 @@ def test_state_started(started):
     assert sale_contract.seller_deposit() == 0
     assert sale_contract.buyer_deposit() == initial_deposit
 
+def test_accept_deposit_too_small(started):
+    with reverts():
+        sale_contract.accept({'from': seller, 'value': initial_offer - 1})
+
 def test_state_accepted(accepted):
     assert sale_contract.sale_hash() == fhex(sale_hash)
     assert sale_contract.seller_address() == seller.address
     assert sale_contract.buyer_address() == buyer.address
     assert sale_contract.state() == ACCEPTED
     assert sale_contract.offer() == initial_offer
+    assert sale_contract.seller_deposit() == initial_deposit
+    assert sale_contract.buyer_deposit() == initial_deposit
+
+def test_reject_after_accepted(accepted):
+    combos = itertools.product(
+        [0, 1],
+        [True, False],
+        [seller, buyer],
+    )
+    for signal, happy, caller in combos:
+        with reverts():
+            sale_contract.reject(signal, happy, {'from': caller})
+
+def test_state_finalized(finalized):
+    assert sale_contract.sale_hash() == fhex(sale_hash)
+    assert sale_contract.seller_address() == seller.address
+    assert sale_contract.buyer_address() == buyer.address
+    assert sale_contract.state() == FINALIZED
+    assert sale_contract.offer() == initial_offer
+    # These public variables retain their last set value.
+    # They do not reflect any fund transfers.
     assert sale_contract.seller_deposit() == initial_deposit
     assert sale_contract.buyer_deposit() == initial_deposit

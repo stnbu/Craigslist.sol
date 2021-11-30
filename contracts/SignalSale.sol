@@ -29,6 +29,22 @@ contract SignalSale {
     uint public seller_deposit;
     uint public buyer_deposit;
 
+    /*
+    // FUTURE: we need a global mapping of `sale_hash` => `Sale`.
+    // This would let us re-use this contract and have all the
+    // metrics we're interested in traceable/calculatable.
+    struct Account {
+	address payable _address;
+	uint deposit;
+    }
+
+    struct Sale {
+	uint offer;
+	Account seller;
+	Account buyer;
+    }
+    */
+
     string constant DEPOSIT_TOO_SMALL =
 	"Deposit must be greater than or equal to the offer.";
 
