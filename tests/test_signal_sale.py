@@ -2,7 +2,7 @@
 
 import pytest
 import brownie
-from brownie import PenaltyBurn, accounts
+from brownie import SignalSale, accounts
 from brownie.test import strategy
 from brownie.convert.datatypes import Wei
 
@@ -32,18 +32,18 @@ def params():
 
 @pytest.fixture
 def deployed(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(PenaltyBurn)}
+    testing_variables = {'sale_contract': accounts[0].deploy(SignalSale)}
     globals().update(testing_variables)
 
 @pytest.fixture
 def started(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(PenaltyBurn)}
+    testing_variables = {'sale_contract': accounts[0].deploy(SignalSale)}
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer, 'value': initial_offer})
 
 @pytest.fixture
 def accepted(params):
-    testing_variables = {'sale_contract': accounts[0].deploy(PenaltyBurn)}
+    testing_variables = {'sale_contract': accounts[0].deploy(SignalSale)}
     globals().update(testing_variables)
     sale_contract.startSale(sale_hash, seller, {'from': buyer})
     sale_contract.acceptCurrentOffer({'from': seller})
