@@ -99,7 +99,6 @@ def test_reject_deployed(deployed):
             sale_contract.reject(signal, happy, {'from': caller})
     assert_balance_math_pre_finalize(sale_contract)
 
-
 def test_state_started(started):
     assert sale_contract.sale_hash() == fhex(sale_hash)
     assert sale_contract.seller_address() == seller.address
@@ -109,6 +108,10 @@ def test_state_started(started):
     assert sale_contract.seller_deposit() == 0
     assert sale_contract.buyer_deposit() == initial_deposit
     assert_balance_math_pre_finalize(sale_contract)
+
+##@pytest.mark.parametrize('caller', [buyer, seller])
+def test_reject_started(deployed):
+    sale_contract.reject(0, True, {'from': buyer})
 
 def test_accept_deposit_too_small(started):
     with reverts():
