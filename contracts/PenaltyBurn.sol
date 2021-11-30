@@ -82,39 +82,39 @@ contract PenaltyBurn {
     }
 
     function burnTo(uint amount, address payable _to) private {
-	_to.transfer(amount);
+        _to.transfer(amount);
     }
 
     function finalizeByBuyer(uint penalty_burn, address payable _to) public requireState(State.ACCEPTED)
         buyerOnly() {
 
-	if ((_to != seller_address) && (_to != address(0))) {
-	    revert("You may only burn to the seller or the zero address");
-	}
+        if ((_to != seller_address) && (_to != address(0))) {
+            revert("You may only burn to the seller or the zero address");
+        }
         state = State.FINALIZED;
-	burnTo(penalty_burn, _to);
+        burnTo(penalty_burn, _to);
         buyer_address.transfer(buyer_deposit - penalty_burn);
         seller_address.transfer(offer + seller_deposit);
         assert(address(this).balance == 0);
     }
 
     function rejectByBuyer(uint penalty_burn, address payable _to) public requireState(State.STARTED) buyerOnly() {
-	if ((_to != seller_address) && (_to != address(0))) {
-	    revert("You may only burn to the seller or the zero address");
-	}
+        if ((_to != seller_address) && (_to != address(0))) {
+            revert("You may only burn to the seller or the zero address");
+        }
         state = State.FINALIZED;
-	burnTo(penalty_burn, _to);
-	buyer_address.transfer(offer + buyer_deposit - penalty_burn);
+        burnTo(penalty_burn, _to);
+        buyer_address.transfer(offer + buyer_deposit - penalty_burn);
         assert(address(this).balance == 0);
     }
 
     function rejectBySeller(uint penalty_burn, address payable _to) public requireState(State.STARTED) sellerOnly() {
-	if ((_to != buyer_address) && (_to != address(0))) {
-	    revert("You may only burn to the buyer or the zero address");
-	}
+        if ((_to != buyer_address) && (_to != address(0))) {
+            revert("You may only burn to the buyer or the zero address");
+        }
         state = State.FINALIZED;
-	burnTo(penalty_burn, _to);
-	buyer_address.transfer(seller_deposit - penalty_burn);
+        burnTo(penalty_burn, _to);
+        buyer_address.transfer(seller_deposit - penalty_burn);
         assert(address(this).balance == 0);
     }
 }
