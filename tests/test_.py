@@ -26,7 +26,7 @@ def params():
         'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                       b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
-        'initial_offer': Wei('3 ether'),
+        'initial_offer': Wei('0.001 ether'),
     }
     globals().update(testing_variables)
 
@@ -81,23 +81,28 @@ def test_accept(started):
         sale_contract.reject(True, {'from': seller})
 
 def test_reject_seller(started):
+    buyer_balance_start = buyer.balance()
     # The seller rejects this STARTED sale with happy=False
     sale_contract.reject(False, {'from': seller})
     assert sale_contract.seller_happy() == False
     assert sale_contract.buyer_happy() == True
+    assert buyer.balance() - buyer_balance_start == initial_offer
 
 def test_reject_buyer(started):
-    # The seller rejects this STARTED sale with happy=False
+    buyer_balance_start = buyer.balance()
+    # The buyer rejects this STARTED sale with happy=False
     sale_contract.reject(False, {'from': buyer})
     assert sale_contract.seller_happy() == True
     assert sale_contract.buyer_happy() == False
+    # FIXME: shouldn't this fail? Shouldn't it be `initial_offer + gas_fees`?
+    assert buyer.balance() - buyer_balance_start == initial_offer
 
 def test_increment(started):
     # The seller cannot increment
     with brownie.reverts():
         sale_contract.incrementOffer({'from': seller})
     assert sale_contract.balance() == initial_offer
-    increment = Wei('1 ether')
+    increment = Wei('0.0001 ether')
     sale_contract.incrementOffer({'from': buyer, 'value': increment})
     assert sale_contract.balance() == initial_offer + increment
 
