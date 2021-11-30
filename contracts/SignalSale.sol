@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-contract PenaltyBurn {
+contract SignalSale {
     // NOTE: All these ugly `seller_foo` and `buyer_foo` variables would
     // ideally be stored in a data structure indexed by `sale_hash`. Making this
     // hopefully a "deployment of the network" rather than "a deployment of a
