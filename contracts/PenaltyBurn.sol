@@ -48,7 +48,7 @@ contract PenaltyBurn {
 
     function startSale(bytes32 _sale_hash, address payable _seller_address, uint _deposit)
         public payable requireState(State.DEPLOYED) {
-        if (_deposit < msg.value / 2) {
+        if (_deposit * 2 < msg.value) {
             revert();
         }
         sale_hash = _sale_hash;
@@ -70,57 +70,49 @@ contract PenaltyBurn {
         offer += msg.value - _deposit_increment;
     }
 
-    function acceptCurrentOffer(uint _deposit) public payable
+    // The seller would want to make a call to `offer()` in the same block.
+    function acceptCurrentOffer() public payable
         requireState(State.STARTED) sellerOnly() {
 
-        if (_deposit < offer) {
+        if (msg.value < offer) {
             revert();
         }
-        seller_deposit = _deposit;
+        seller_deposit = msg.value;
         state = State.ACCEPTED;
     }
 
-    function finalize(int penalty_burn) public requireState(State.ACCEPTED)
+    function burnTo(uint amount, address payable _to) public payable {
+	_to.transfer(amount);
+    }
+
+    function finalizeByBuyer(uint penalty_burn, address payable _to) public requireState(State.ACCEPTED)
         buyerOnly() {
 
-        if (uint(0-penalty_burn) > buyer_deposit) {
-            revert();
-        }
-
-        if (penalty_burn != 0) {
-            if (penalty_burn < 0) {
-                ZERO_ADDRESS.transfer(uint(0-penalty_burn));
-            } else {
-                seller_address.transfer(uint(penalty_burn));
-            }
-        }
+	if ((_to != seller_address) && (_to != address(0))) {
+	    revert("You may only burn to the seller or the zero address");
+	}
         state = State.FINALIZED;
+	burnTo(penalty_burn, _to);
+        buyer_address.transfer(buyer_deposit - penalty_burn);
         seller_address.transfer(offer + seller_deposit);
-        buyer_address.transfer(buyer_deposit - uint(0-penalty_burn));
         assert(address(this).balance == 0);
     }
 
-    function reject(uint penalty_burn) public requireState(State.STARTED) {
+    function rejectByBuyer(uint penalty_burn, address payable _to) public requireState(State.STARTED) buyerOnly() {
+	if ((_to != seller_address) && (_to != address(0))) {
+	    revert("You may only burn to the seller or the zero address");
+	}
         state = State.FINALIZED;
-        if (msg.sender == buyer_address) {
-            if (penalty_burn < 0) {
-                ZERO_ADDRESS.transfer(uint(0-penalty_burn));
-            } else if (penalty_burn > 0) {
-                seller_address.transfer(penalty_burn);
-            }
-            seller_address.transfer(seller_deposit);
-            buyer_address.transfer(offer + buyer_deposit - uint(0-penalty_burn));
-        } else if (msg.sender == seller_address) {
-            if (penalty_burn < 0) {
-                address(ZERO_ADDRESS).transfer(0-penalty_burn);
-            } else if (penalty_burn > 0) {
-                buyer_address.transfer(penalty_burn);
-            }
-            seller_address.transfer(seller_deposit - 0-penalty_burn);
-            buyer_address.transfer(offer + buyer_deposit);
-        } else {
-            revert();
-        }
-        assert(address(this).balance == 0);
+	burnTo(penalty_burn, _to);
+	buyer_address.transfer(offer + buyer_deposit - penalty_burn);
+    }
+
+    function rejectBySeller(uint penalty_burn, address payable _to) public requireState(State.STARTED) sellerOnly() {
+	if ((_to != buyer_address) && (_to != address(0))) {
+	    revert("You may only burn to the buyer or the zero address");
+	}
+        state = State.FINALIZED;
+	burnTo(penalty_burn, _to);
+	buyer_address.transfer(seller_deposit - penalty_burn);
     }
 }
