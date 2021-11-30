@@ -15,8 +15,8 @@ def fhex(n):
 
 @pytest.fixture
 def params():
-    send_to_start = 2  # yes, two Wei. Is there an argument to use "realistic
-                       # amounts of money"?
+    send_to_start = 10  # yes, ten Wei. Is there an argument to use "realistic
+                        # amounts of money"?
     # NOTE MAGIC HACK: these are "injected" via a globals update.
     testing_variables = {
         'deployer': accounts[0],
@@ -31,6 +31,13 @@ def params():
         'initial_deposit': send_to_start / 2,
     }
     globals().update(testing_variables)
+
+def assert_balance_math_pre_finalize(contract):
+    assert (contract.offer() +
+            contract.seller_deposit() +
+            contract.buyer_deposit()
+            ==
+            contract.balance())
 
 @pytest.fixture
 def deployed(params):
@@ -66,10 +73,12 @@ def test_constructor(deployed):
     assert sale_contract.offer() == 0;
     assert sale_contract.buyer_deposit() == 0;
     assert sale_contract.seller_deposit() == 0;
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_start_deposit_too_small(deployed):
     with reverts():
         sale_contract.start(sale_hash, seller, initial_deposit - 1, {'from': buyer, 'value': initial_send})
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_blind_call_to_accept(deployed):
     # This should revert because
@@ -77,6 +86,19 @@ def test_blind_call_to_accept(deployed):
     #   2. seller_address is uninitialized
     with reverts():
         sale_contract.accept({'from': seller, 'value': initial_offer})
+    assert_balance_math_pre_finalize(sale_contract)
+
+def test_reject_deployed(deployed):
+    combos = itertools.product(
+        [0, 1],
+        [True, False],
+        [seller, buyer],
+    )
+    for signal, happy, caller in combos:
+        with reverts():
+            sale_contract.reject(signal, happy, {'from': caller})
+    assert_balance_math_pre_finalize(sale_contract)
+
 
 def test_state_started(started):
     assert sale_contract.sale_hash() == fhex(sale_hash)
@@ -86,10 +108,12 @@ def test_state_started(started):
     assert sale_contract.offer() == initial_offer
     assert sale_contract.seller_deposit() == 0
     assert sale_contract.buyer_deposit() == initial_deposit
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_accept_deposit_too_small(started):
     with reverts():
         sale_contract.accept({'from': seller, 'value': initial_offer - 1})
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_state_accepted(accepted):
     assert sale_contract.sale_hash() == fhex(sale_hash)
@@ -99,6 +123,7 @@ def test_state_accepted(accepted):
     assert sale_contract.offer() == initial_offer
     assert sale_contract.seller_deposit() == initial_deposit
     assert sale_contract.buyer_deposit() == initial_deposit
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_reject_after_accepted(accepted):
     combos = itertools.product(
@@ -109,6 +134,7 @@ def test_reject_after_accepted(accepted):
     for signal, happy, caller in combos:
         with reverts():
             sale_contract.reject(signal, happy, {'from': caller})
+    assert_balance_math_pre_finalize(sale_contract)
 
 def test_state_finalized(finalized):
     assert sale_contract.sale_hash() == fhex(sale_hash)
@@ -120,3 +146,5 @@ def test_state_finalized(finalized):
     # They do not reflect any fund transfers.
     assert sale_contract.seller_deposit() == initial_deposit
     assert sale_contract.buyer_deposit() == initial_deposit
+    with pytest.raises(AssertionError): # because we do not update on finalize
+        assert_balance_math_pre_finalize(sale_contract)
