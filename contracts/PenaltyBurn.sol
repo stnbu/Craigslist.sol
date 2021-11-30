@@ -81,7 +81,7 @@ contract PenaltyBurn {
         state = State.ACCEPTED;
     }
 
-    function burnTo(uint amount, address payable _to) public payable {
+    function burnTo(uint amount, address payable _to) private {
 	_to.transfer(amount);
     }
 
@@ -105,6 +105,7 @@ contract PenaltyBurn {
         state = State.FINALIZED;
 	burnTo(penalty_burn, _to);
 	buyer_address.transfer(offer + buyer_deposit - penalty_burn);
+        assert(address(this).balance == 0);
     }
 
     function rejectBySeller(uint penalty_burn, address payable _to) public requireState(State.STARTED) sellerOnly() {
@@ -114,5 +115,6 @@ contract PenaltyBurn {
         state = State.FINALIZED;
 	burnTo(penalty_burn, _to);
 	buyer_address.transfer(seller_deposit - penalty_burn);
+        assert(address(this).balance == 0);
     }
 }
