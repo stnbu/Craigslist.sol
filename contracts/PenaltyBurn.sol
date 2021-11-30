@@ -11,21 +11,23 @@ contract PenaltyBurn {
     // the offer amount.
 
     enum State {
-        DEPLOYED,
-        STARTED,
-        ACCEPTED,
-        FINALIZED
+        DEPLOYED, // Set by constructor, used as required state for start.
+        STARTED,  // Buyer starts the sale.
+        ACCEPTED, // Seller accepts. Means: "Seller will ship item now!"
+        FINALIZED // Sale is rejected by anyone or finalized by the buyer.
     }
 
     bytes32 public sale_hash;
     address payable public seller_address;
     address payable public buyer_address;
     State public state;
+
+    // The sum of these three should equal `this.balance` at all times [TBD]
     uint public offer;
     uint public seller_deposit;
     uint public buyer_deposit;
 
-    address payable constant ZERO_ADDRESS = address(0);
+    string constant DEPOSIT_TOO_SMALL = "Deposit must be greater than or equal to the offer.";
 
     modifier requireState(State _state) {
         require (state == _state);
@@ -46,10 +48,11 @@ contract PenaltyBurn {
         state = State.DEPLOYED;
     }
 
+    // `_deposit` means: "`_deposit` of `msg.value` is my deposit!"
     function startSale(bytes32 _sale_hash, address payable _seller_address, uint _deposit)
         public payable requireState(State.DEPLOYED) {
         if (_deposit * 2 < msg.value) {
-            revert();
+            revert(DEPOSIT_TOO_SMALL);
         }
         sale_hash = _sale_hash;
         seller_address = _seller_address;
@@ -64,7 +67,7 @@ contract PenaltyBurn {
 
         if (offer + msg.value - _deposit_increment <
             buyer_deposit + _deposit_increment) {
-            revert();
+            revert(DEPOSIT_TOO_SMALL);
         }
         buyer_deposit += _deposit_increment;
         offer += msg.value - _deposit_increment;
@@ -75,7 +78,7 @@ contract PenaltyBurn {
         requireState(State.STARTED) sellerOnly() {
 
         if (msg.value < offer) {
-            revert();
+            revert(DEPOSIT_TOO_SMALL);
         }
         seller_deposit = msg.value;
         state = State.ACCEPTED;
