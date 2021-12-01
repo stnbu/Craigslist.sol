@@ -89,15 +89,10 @@ def test_blind_call_to_accept(deployed):
     assert_balance_math_pre_finalize(sale_contract)
 
 def test_reject_deployed(deployed):
-    combos = itertools.product(
-        [0, 1],
-        [True, False],
-        [seller, buyer],
-    )
-    for signal, happy, caller in combos:
+    for caller in [buyer, seller]:
         with reverts():
-            sale_contract.reject(signal, happy, {'from': caller})
-    assert_balance_math_pre_finalize(sale_contract)
+            sale_contract.reject({'from': caller})
+            assert_balance_math_pre_finalize(sale_contract)
 
 def test_state_started(started):
     assert sale_contract.sale_hash() == fhex(sale_hash)
@@ -109,9 +104,15 @@ def test_state_started(started):
     assert sale_contract.buyer_deposit() == initial_deposit
     assert_balance_math_pre_finalize(sale_contract)
 
-##@pytest.mark.parametrize('caller', [buyer, seller])
-def test_reject_started(deployed):
-    sale_contract.reject(0, True, {'from': buyer})
+def test_reject_started_seller(started):
+    sale_contract.reject({'from': seller})
+    with pytest.raises(AssertionError): # because we do not update `offer`, et al on reject
+        assert_balance_math_pre_finalize(sale_contract)
+
+def test_reject_started_buyer(started):
+    sale_contract.reject({'from': buyer})
+    with pytest.raises(AssertionError): # because we do not update `offer`, et al on reject
+        assert_balance_math_pre_finalize(sale_contract)
 
 def test_accept_deposit_too_small(started):
     with reverts():
@@ -129,15 +130,10 @@ def test_state_accepted(accepted):
     assert_balance_math_pre_finalize(sale_contract)
 
 def test_reject_after_accepted(accepted):
-    combos = itertools.product(
-        [0, 1],
-        [True, False],
-        [seller, buyer],
-    )
-    for signal, happy, caller in combos:
+    for caller in [buyer, seller]:
         with reverts():
-            sale_contract.reject(signal, happy, {'from': caller})
-    assert_balance_math_pre_finalize(sale_contract)
+            sale_contract.reject({'from': caller})
+            assert_balance_math_pre_finalize(sale_contract)
 
 def test_state_finalized(finalized):
     assert sale_contract.sale_hash() == fhex(sale_hash)

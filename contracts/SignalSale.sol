@@ -161,48 +161,11 @@ contract SignalSale {
         assert(address(this).balance == 0);
     }
 
-    // Here is the beauty: `happy` has no meaning (is undefined) if
-    // `signal == 0`.
-    //
-    // Corollary: This means that if `signal==0` then `happy` is neutral.
-    //
-    // By examining `signal` and `happy` together you have three options:
-    // * `signal == 0` --> I am neither happy nor unhappy
-    // * `happy == true && signal == n` --> I am `n` happy
-    // * `happy == false && signal == n` --> I am `n` unhappy
-    //
-    // And all of these are backed by the participant having sacrificed some
-    // money to make the point. It also costs a tiny bit of additional gas when
-    // `signal > 0`. That's traceable and could be part of future calculations
-    // with regard to a participant's "reputation".
-    //
-    // Keep in mind that `signal=0` means the caller and the other participant
-    // keep all of their money. If everyone acts in good faith, this should be
-    // `0` for all but a tiny sliver of sales, about which you have actionable
-    // reputation metrics. `signal > 0` should only be for exceptionally squeaky
-    // wheels.
-    function reject(uint signal, bool happy) public requireState(State.STARTED)
-	either() {
+    // Either party can reject when STARTED. Buyer gets refund. Seller has no
+    // refund due.
+    function reject() public requireState(State.STARTED) either() {
         state = State.FINALIZED;
-	uint refund;
-	if (signal > 0) {
-	    address payable signal_to = other();
-	    if (!happy) {
-		signal_to = address(0);
-	    }
-	    signal_to.transfer(signal);
-	}
-	// one thing wrong here... only one participant gets an opportunity to
-	// signal.
-	if (seller_address == msg.sender) {
-	    seller_address.transfer(seller_deposit - signal);
-	    buyer_address.transfer(offer + buyer_deposit);
-	} else if (buyer_address == msg.sender) {
-	    seller_address.transfer(seller_deposit);
-	    buyer_address.transfer(offer + buyer_deposit - signal);
-	} else {
-	    revert("FIXME: we shouldn't get here. refactor.");
-	}
+	buyer_address.transfer(offer + buyer_deposit);
         assert(address(this).balance == 0);
     }
 }
