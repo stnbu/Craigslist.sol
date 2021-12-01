@@ -1,171 +1,147 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
 
 contract SignalSale {
-    // NOTE: All these ugly `seller_foo` and `buyer_foo` variables would
-    // ideally be stored in a data structure indexed by `sale_hash`. Making this
-    // hopefully a "deployment of the network" rather than "a deployment of a
-    // sale".
-    //
-    // This contract has the concept of "deposits". For PoC simplicity purposes,
-    // we will assume that participation requires a deposit of 100% or more of
-    // the offer amount.
 
     enum State {
-        DEPLOYED, // Set by constructor, used as required state for start.
-        STARTED,  // Buyer starts the sale.
-        ACCEPTED, // Seller accepts. Means: "Seller will ship item now!"
-        FINALIZED // Sale is rejected by anyone or finalized by the buyer.
+        NOT_STARTED,
+        STARTED,
+        ACCEPTED,
+        FINALIZED,
+        SIGNALED,
+        CANCELED
     }
 
-
-    bytes32 public sale_hash; // Unless revealed by participants: just data.
-    address payable public seller_address;
-    address payable public buyer_address;
-    State public state; // Used and set by function to track state.
-
-    // The sum of these three should equal `this.balance` at all times [TBD]
-    uint public offer; // What the seller is currently agreeing to pay.
-    // These are returned respectively, minus any "signal".
-    uint public seller_deposit;
-    uint public buyer_deposit;
-
-    /*
-    // FUTURE: we need a global mapping of `sale_hash` => `Sale`.
-    // This would let us re-use this contract and have all the
-    // metrics we're interested in traceable/calculatable.
-    struct Account {
-	address payable _address;
-	uint deposit;
+    // There is an implicit `deposit` member for both buyer and seller. We don't
+    // track it because it's understood To be exactly equal to "offer" and
+    // required by both.
+    struct Participant {
+        address payable _address;
+        bool revealed;
+        uint signal;
+        bool happy;
+        bytes32 signal_hash;
+        bytes32 salt;
+        uint balance;
     }
 
     struct Sale {
-	uint offer;
-	Account seller;
-	Account buyer;
-    }
-    */
-
-    string constant DEPOSIT_TOO_SMALL =
-	"Deposit must be greater than or equal to the offer.";
-
-    modifier requireState(State _state) {
-        require (state == _state);
-        _;
+        uint offer;
+        State state;
+        Participant buyer;
+        Participant seller;
     }
 
-    modifier buyerOnly() {
-        require (msg.sender == buyer_address);
-        _;
+    mapping(bytes32 => Sale) public sales;
+
+    function start(bytes32 sale_hash, address payable seller_address) public
+	payable {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.state == State.NOT_STARTED, "Sale already started.");
+        require(msg.value % 2 == 0, "Value sent must be divisible by two.");
+        this_sale.offer = msg.value / 2;
+        this_sale.state = State.STARTED;
+
+        Participant storage buyer;
+        buyer._address = msg.sender;
+        buyer.happy = true;
+        this_sale.buyer = buyer;
+
+        Participant storage seller;
+        seller._address = seller_address;
+        seller.happy = true;
+        this_sale.seller = seller;
     }
 
-    modifier sellerOnly() {
-        require (msg.sender == seller_address);
-        _;
+    function accept(bytes32 sale_hash) public payable {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.seller._address == msg.sender);
+        require(this_sale.state == State.STARTED);
+        require(this_sale.offer == msg.value);
+        // The seller has an _implicit_ deposit, by the rules of the game. No
+        // need to track.
+        this_sale.state = State.ACCEPTED;
     }
 
-    modifier either() {
-        require ((msg.sender == buyer_address) ||
-		 (msg.sender == seller_address));
-	_;
+    function finalize(bytes32 sale_hash, bytes32 signal_hash) public {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.buyer._address == msg.sender);
+        require(this_sale.state == State.ACCEPTED);
+        this_sale.state = State.FINALIZED;
+        this_sale.buyer.signal_hash = signal_hash;
     }
 
-    constructor() public {
-        state = State.DEPLOYED;
+    function cancel(bytes32 sale_hash) public {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.buyer._address == msg.sender);
+        require(this_sale.state == State.STARTED);
+        // These should be impossible. We leave them in as suspenders.
+        assert(this_sale.seller.balance == 0);
+        assert(this_sale.offer == address(this).balance);
+        this_sale.state = State.CANCELED;
+        this_sale.buyer.balance = address(this).balance;
     }
 
-    // `_sale_hash` is the hash representing the sale, agreed to in advance,
-    // offline by the buyer and seller. If the buyer supplies a value the seller
-    // doesn't recognize/approve of, the seller may simply ignore this contract.
-    //
-    // `_seller_address` is the seller. The entity you have been "communicating
-    // with" offline and who you expect to eventually call `accept`.
-    //
-    // `_deposit` means: "`_deposit` of `msg.value` is my deposit." If buyer
-    // sends 3 Ether and `_deposit` is 1 Ether then `offer` becomes 2 Ether.
-    function start(bytes32 _sale_hash, address payable _seller_address,
-		   uint _deposit) public payable requireState(State.DEPLOYED) {
-        if (_deposit * 2 < msg.value) {
-            revert(DEPOSIT_TOO_SMALL);
+    function sellerSignals(bytes32 sale_hash, bytes32 signal_hash) public {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.seller._address == msg.sender);
+        require(this_sale.state == State.FINALIZED);
+        this_sale.buyer.signal_hash = signal_hash;
+        this_sale.state = State.SIGNALED;
+    }
+
+    function thisParticipant(Sale memory sale) private
+	returns (Participant memory) {
+        if (sale.buyer._address == msg.sender) {
+            return sale.buyer;
+        } else if (sale.seller._address == msg.sender) {
+            return sale.seller;
+        } else {
+            revert();
         }
-        sale_hash = _sale_hash;
-        seller_address = _seller_address;
-        buyer_address = msg.sender;
-        buyer_deposit = _deposit;
-        offer = msg.value - buyer_deposit;
-        state = State.STARTED;
     }
 
-    // The buyer may call this function to increment his offer, but only when
-    // in state `STARTED`.
-    //
-    // `_deposit_increment` means: "`_deposit_increment` of `msg.value` is the
-    // additional deposit contribution the remainder of that will increment
-    // `offer`." Here we must check to ensure that the _resulting_
-    // `buyer_deposit` is greater or equal to the resulting `offer`.
-    function increment(uint _deposit_increment) public payable
-        requireState(State.STARTED) buyerOnly() {
-
-        if (buyer_deposit + _deposit_increment <
-	    offer + msg.value - _deposit_increment) {
-            revert(DEPOSIT_TOO_SMALL);
+    function otherParticipant(Sale memory sale) private
+	returns (Participant memory) {
+        if (sale.buyer._address == msg.sender) {
+            return sale.seller;
+        } else if (sale.seller._address == msg.sender) {
+            return sale.buyer;
+        } else {
+            revert();
         }
-        buyer_deposit += _deposit_increment;
-        offer += msg.value - _deposit_increment;
     }
 
-    // This is callable only by the seller and only when in state `STARTED`
-    //
-    // The value sent to this function must be greater than or equal to
-    // the current offer. If so, `msg.value` becomes the seller's deposit.
-    //
-    // The seller would want to make a call to `offer()` in the same block
-    // because by successfully calling this function, she is implicitly
-    // agreeing to accept `offer`.
-    function accept() public payable
-        requireState(State.STARTED) sellerOnly() {
+    function reveal(bytes32 sale_hash, uint salt, uint signal, bool happy)
+	public {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.state == State.SIGNALED);
+        Participant memory caller = thisParticipant(this_sale);
+        require(caller.signal_hash ==
+                keccak256(abi.encodePacked(salt, signal, happy)));
+        caller.revealed = true;
+        caller.signal = signal;
+        caller.happy = happy;
 
-        if (msg.value < offer) {
-            revert(DEPOSIT_TOO_SMALL);
+        Participant memory other = otherParticipant(this_sale);
+        if (caller.happy) {
+            other.balance = this_sale.offer / 2 + signal;
+        } else {
+            other.balance = this_sale.offer / 2;
         }
-        seller_deposit = msg.value;
-        state = State.ACCEPTED;
     }
 
-    // There are _ONLY TWO_ participants in this sale: buyer and seller.
-    // This function returns "the other one" (if b then s; if s then b)
-    // and reverts if `msg.sender` is neither participant.
-    function other() private returns (address payable) {
-	// FIXME: do we need to inspect *_address for zeroness?
-	if (msg.sender == seller_address) {
-	    return buyer_address;
-	} else if (msg.sender == buyer_address) {
-	    return seller_address;
-	} else {
-	    revert("You are not part of this sale");
-	}
-    }
-
-    function finalize(uint signal, bool happy) public
-	requireState(State.ACCEPTED) buyerOnly() {
-
-        state = State.FINALIZED;
-	if (signal > 0) {
-	    if (!happy) {
-		address(0).transfer(signal);
-	    } else {
-		seller_address.transfer(signal);
-	    }
-	}
-        buyer_address.transfer(buyer_deposit - signal);
-        seller_address.transfer(offer + seller_deposit);
-        assert(address(this).balance == 0);
-    }
-
-    // Either party can reject when STARTED. Buyer gets refund. Seller has no
-    // refund due.
-    function reject() public requireState(State.STARTED) either() {
-        state = State.FINALIZED;
-	buyer_address.transfer(offer + buyer_deposit);
-        assert(address(this).balance == 0);
+    function withdraw(bytes32 sale_hash) public {
+        Sale storage this_sale = sales[sale_hash];
+        require(this_sale.state == State.SIGNALED);
+        require(this_sale.seller.revealed && this_sale.buyer.revealed);
+        Participant memory caller = thisParticipant(this_sale);
+        Participant memory other = otherParticipant(this_sale);
+        if (!other.happy) {
+            address(0).transfer(other.signal);
+        }
+        uint to_caller = caller.balance;
+        caller.balance = 0;
+        caller._address.transfer(to_caller);
     }
 }
