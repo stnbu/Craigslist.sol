@@ -35,7 +35,7 @@ contract SignalSale {
     mapping(bytes32 => Sale) public sales;
 
     function start(bytes32 sale_hash, address payable seller_address) public
-	payable {
+        payable {
         require(msg.value % 2 == 0);
         Sale storage this_sale = sales[sale_hash];
         require(this_sale.state == State.NOT_STARTED);
@@ -77,7 +77,7 @@ contract SignalSale {
         require(this_sale.state == State.STARTED);
         // These should be impossible. We leave them in as suspenders.
         assert(this_sale.seller.balance == 0);
-	// this.balance == offer + buyer.deposit == 2 * offer
+        // this.balance == offer + buyer.deposit == 2 * offer
         assert(this_sale.offer * 2 == address(this).balance);
         this_sale.state = State.CANCELED;
         this_sale.buyer.balance = address(this).balance;
@@ -92,7 +92,7 @@ contract SignalSale {
     }
 
     function thisParticipant(Sale memory sale) private
-	returns (Participant memory) {
+        returns (Participant memory) {
         if (sale.buyer._address == msg.sender) {
             return sale.buyer;
         } else if (sale.seller._address == msg.sender) {
@@ -103,7 +103,7 @@ contract SignalSale {
     }
 
     function otherParticipant(Sale memory sale) private
-	returns (Participant memory) {
+        returns (Participant memory) {
         if (sale.buyer._address == msg.sender) {
             return sale.seller;
         } else if (sale.seller._address == msg.sender) {
@@ -114,7 +114,7 @@ contract SignalSale {
     }
 
     function reveal(bytes32 sale_hash, uint salt, uint signal, bool happy)
-	public {
+        public {
         Sale storage this_sale = sales[sale_hash];
         require(this_sale.state == State.SIGNALED);
         Participant memory caller = thisParticipant(this_sale);
@@ -137,8 +137,8 @@ contract SignalSale {
         require(
 		((this_sale.state == State.SIGNALED) &&
 		 (this_sale.seller.revealed && this_sale.buyer.revealed))
-		||
-		(this_sale.state == State.CANCELED));
+                ||
+                (this_sale.state == State.CANCELED));
         Participant memory caller = thisParticipant(this_sale);
         Participant memory other = otherParticipant(this_sale);
         if (!other.happy) {
