@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pytest
+import web3
 from brownie import SignalSale, accounts
 from brownie.convert.datatypes import HexString, EthAddress, Wei
 
@@ -17,6 +18,24 @@ def fhex(n):
 
 @pytest.fixture
 def params():
+    _buyer_salt = HexString('0xb10beef', 'bytes32')
+    _buyer_signal_hash = web3.Web3.solidityKeccak(
+        ['bytes32', 'uint256', 'bool'],
+        [
+            _buyer_salt,
+            1,
+            False
+        ]
+    )
+    _seller_salt = HexString('0xbadbeef', 'bytes32')
+    _seller_signal_hash = web3.Web3.solidityKeccak(
+        ['bytes32', 'uint256', 'bool'],
+        [
+            _seller_salt,
+            1,
+            False
+        ]
+    )
     _expected_sale = {
         'offer': Wei(0),
         'state': None,
@@ -53,6 +72,10 @@ def params():
         # If a fixture is not used this does not get checked! Tests can update
         # the expected `Sale` incrementally as needed for more sophistocated tests.
         'expected_sale': _expected_sale,
+        'buyer_salt': _buyer_salt,
+        'seller_salt': _seller_salt,
+        'buyer_signal_hash': _buyer_signal_hash,
+        'seller_signal_hash': _seller_signal_hash,
     }
     globals().update(testing_variables)
 
@@ -102,17 +125,16 @@ def canceled(started):
 
 @pytest.fixture
 def finalized(accepted):
-    signal_hash = sale_hash # FIXME: hack4now
-    sale_contract.finalize(sale_hash, signal_hash, {'from': buyer})
-    expected_sale['buyer']['signal_hash'] = fhex(signal_hash)
+    sale_contract.finalize(sale_hash, buyer_signal_hash, {'from': buyer})
+    expected_sale['buyer']['signal_hash'] = HexString(buyer_signal_hash.hex(), 'bytes32')
     expected_sale['state'] = FINALIZED
+    #raise Exception
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def signaled(finalized):
-    signal_hash = sale_hash # FIXME: hack4now
-    sale_contract.sellerSignals(sale_hash, signal_hash, {'from': seller})
-    expected_sale['seller']['signal_hash'] = fhex(signal_hash)
+    sale_contract.sellerSignals(sale_hash, seller_signal_hash, {'from': seller})
+    expected_sale['seller']['signal_hash'] = HexString(seller_signal_hash.hex(), 'bytes32')
     expected_sale['state'] = SIGNALED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
