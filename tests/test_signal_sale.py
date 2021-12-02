@@ -3,7 +3,6 @@
 import itertools
 import pytest
 from brownie import SignalSale, accounts, reverts
-
 from brownie.convert.datatypes import HexString, EthAddress, Wei
 
 # State enum values. These need to account for any solidity changes.
@@ -73,8 +72,9 @@ def get_sale_dict(sale):
 @pytest.fixture
 def deployed(params):
     globals().update({'sale_contract': deployer.deploy(SignalSale)})
-    # test this fixture's correctness
-    #  FIXME but state is None!
+    # FIXME: At this point LHS state=None and RHS state=0, but this passes.
+    # The following line should be required!
+    #expected_sale['state'] = NOT_STARTED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
