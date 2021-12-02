@@ -34,18 +34,18 @@ def params():
             'balance': Wei(0),
             'happy': True,
             'revealed': False,
-            'salt': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'salt': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
-            'signal_hash': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'signal_hash': HexString('0x0', 'bytes32'),
         },
         'seller': {
             '_address': seller,
             'balance': Wei(0),
             'happy': True,
             'revealed': False,
-            'salt': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'salt': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
-            'signal_hash': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'signal_hash': HexString('0x0', 'bytes32'),
         },
     }
 
