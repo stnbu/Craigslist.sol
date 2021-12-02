@@ -108,6 +108,14 @@ def finalized(accepted):
     expected_sale['state'] = FINALIZED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
+@pytest.fixture
+def signaled(finalized):
+    signal_hash = sale_hash # FIXME: hack4now
+    sale_contract.sellerSignals(sale_hash, signal_hash, {'from': seller})
+    expected_sale['seller']['signal_hash'] = fhex(signal_hash)
+    expected_sale['state'] = SIGNALED
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
 # use the deployed fixture just once.
 def test_deployed_fixture(deployed):
     pass
@@ -126,4 +134,8 @@ def test_accepted_fixture(accepted):
 
 # use the finalized fixture just once.
 def test_finalized_fixture(finalized):
+    pass
+
+# use the signaled fixture just once.
+def test_signaled_fixture(signaled):
     pass

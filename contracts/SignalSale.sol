@@ -169,11 +169,12 @@ contract SignalSale {
     }
 
     function sellerSignals(bytes32 sale_hash, bytes32 signal_hash) public {
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.seller._address == msg.sender);
-        require(this_sale.state == State.FINALIZED);
-        this_sale.buyer.signal_hash = signal_hash;
-        this_sale.state = State.SIGNALED;
+        Sale memory sale = sales[sale_hash];
+        require(sale.seller._address == msg.sender);
+        require(sale.state == State.FINALIZED);
+        sale.seller.signal_hash = signal_hash;
+        sale.state = State.SIGNALED;
+        sales[sale_hash] = sale;
     }
 
     function thisParticipant(Sale memory sale) private
