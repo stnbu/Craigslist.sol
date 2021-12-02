@@ -36,9 +36,9 @@ contract SignalSale {
 
     function start(bytes32 sale_hash, address payable seller_address) public
 	payable {
-        require(msg.value % 2 == 0, "Value sent must be divisible by two.");
+        require(msg.value % 2 == 0);
         Sale storage this_sale = sales[sale_hash];
-        require(this_sale.state == State.NOT_STARTED, "Sale already started.");
+        require(this_sale.state == State.NOT_STARTED);
         this_sale.offer = msg.value / 2;
         this_sale.state = State.STARTED;
 
