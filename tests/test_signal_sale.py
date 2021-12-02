@@ -17,14 +17,6 @@ def fhex(n):
 
 @pytest.fixture
 def params():
-    _start_value = 10
-    # This is just "any bytes32". Hardcoded for now.
-    _sale_hash = (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
-                  b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
-                  b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r')
-    deployer = accounts[0]
-    seller = accounts[1]
-    buyer = accounts[2]
 
     _expected_sale = {
         'offer': Wei(0),
@@ -50,11 +42,14 @@ def params():
     }
 
     testing_variables = {
-        'start_value': _start_value,
-        'deployer': deployer,
-        'buyer': buyer,
-        'seller': seller,
-        'sale_hash': _sale_hash,
+        'start_value': 10,
+        'deployer': accounts[0],
+        'buyer': accounts[1],
+        'seller': accounts[1],
+        # This is just "any bytes32". Hardcoded for now.
+        'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
+                      b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
+                      b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
         'expected_sale': _expected_sale,
     }
     globals().update(testing_variables)
