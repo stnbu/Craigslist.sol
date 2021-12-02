@@ -41,9 +41,14 @@ contract SignalSale {
 
     // Important:
     //
-    // When either party chooses a `signal` greater than zero, that money is _taken from them_! Participants in "nominal" sales are incentive to set `signal=0`, which renders `happy` meaningless and maximizes their outcomes.
+    // When either party chooses a `signal` greater than zero, that money is
+    // _taken from them_! Participants in "nominal" sales are incentive to set
+    // `signal=0`, which renders `happy` meaningless and maximizes their
+    // outcomes.
     //
-    // On first impression, it may seems absurd for a user to voluntarily give up some of their deposit, especially if it is simply burnt, but imagine a few scenarios:
+    // On first impression, it may seems absurd for a user to voluntarily give
+    // up some of their deposit, especially if it is simply burnt, but imagine a
+    // few scenarios:
     //
     // Example:
     //
@@ -63,9 +68,10 @@ contract SignalSale {
     // keys.
     //
     // You can even examine the balance of buyers' wallets at the time of sale
-    // to get a gauge on how "big" the players are. You can also examine the reputation of these buyers.
-    // An experienced, reputable buyer that understands how the system works would
-    // not hesitate to signal unhappy to some extent if they were screwed over a $200 guitar.
+    // to get a gauge on how "big" the players are. You can also examine the
+    // reputation of these buyers.  An experienced, reputable buyer that
+    // understands how the system works would not hesitate to signal unhappy to
+    // some extent if they were screwed over a $200 guitar.
     //
     // You have no recourse. There is nothing else you can do but vote with a
     // few of you $200 (which you laid down as a deposit when you called
@@ -81,8 +87,8 @@ contract SignalSale {
     // TBD:
     //
     // * All data for all sales are traceable, but this data is not stored in a
-    // particularly efficient way from the "traceability" point of view. This
-    // is intentional: contracts should be very terse and efficient. The work
+    // particularly efficient way from the "traceability" point of view. This is
+    // intentional: contracts should be very terse and efficient. The work
     // required to go through _millions_ of sales in this contract is minuscule
     // for a single server that has access to the blockchain. In production, a
     // process (on a server) will need to calculate helpful metrics for future
