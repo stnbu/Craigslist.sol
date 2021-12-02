@@ -17,7 +17,7 @@ def fhex(n):
 
 @pytest.fixture
 def params():
-    send_to_start = 10
+    _start_value = 10
     # This is just "any bytes32". Hardcoded for now.
     _sale_hash = (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                   b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
@@ -27,21 +27,21 @@ def params():
     buyer = accounts[2]
 
     _expected_sale = {
-        'offer': Wei(send_to_start / 2),
+        'offer': Wei(0),
         'state': None,
         'buyer': {
-            '_address': buyer,
+            '_address': EthAddress(HexString('0x0', 'bytes20')),
             'balance': Wei(0),
-            'happy': True,
+            'happy': False,
             'revealed': False,
             'salt': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
             'signal_hash': HexString('0x0', 'bytes32'),
         },
         'seller': {
-            '_address': seller,
+            '_address': EthAddress(HexString('0x0', 'bytes20')),
             'balance': Wei(0),
-            'happy': True,
+            'happy': False,
             'revealed': False,
             'salt': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
@@ -50,12 +50,10 @@ def params():
     }
 
     testing_variables = {
+        'start_value': _start_value,
         'deployer': deployer,
         'buyer': buyer,
         'seller': seller,
-        'initial_send': send_to_start,
-        'initial_offer': send_to_start / 2,
-        'initial_deposit': send_to_start / 2,
         'sale_hash': _sale_hash,
         'expected_sale': _expected_sale,
     }
@@ -78,20 +76,20 @@ def deployed(params):
 def started(params):
     testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
     globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
+    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
 
 @pytest.fixture
 def accepted(params):
     testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
     globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
+    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
     sale_contract.accept({'from': seller, 'value': initial_deposit})
 
 @pytest.fixture
 def finalized(params):
     testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
     globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': initial_send})
+    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
     sale_contract.accept({'from': seller, 'value': initial_deposit})
     sale_contract.finalize(0, True, {'from': buyer})
 
@@ -108,7 +106,13 @@ def get_sale_dict(sale):
     }
 
 def test_constructor(deployed):
-    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': initial_send})
+    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': start_value})
     sale = get_sale_dict(sale_contract.sales(sale_hash))
+    # Things we expect to be set by `start`.
+    expected_sale['buyer']['_address'] = buyer.address
+    expected_sale['buyer']['happy'] = True
+    expected_sale['seller']['_address'] = seller.address
+    expected_sale['seller']['happy'] = True
+    expected_sale['offer'] = start_value / 2
     expected_sale['state'] = STARTED
     assert(sale == expected_sale)
