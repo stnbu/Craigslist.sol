@@ -43,7 +43,7 @@ contract SignalSale {
         this_sale.state = State.STARTED;
 
         Participant storage buyer;
-        buyer._address = msg.sender;
+        buyer._address = payable(msg.sender);
         buyer.happy = true;
         this_sale.buyer = buyer;
 
@@ -138,7 +138,7 @@ contract SignalSale {
         Participant memory caller = thisParticipant(this_sale);
         Participant memory other = otherParticipant(this_sale);
         if (!other.happy) {
-            address(0).transfer(other.signal);
+            payable(address(0)).transfer(other.signal);
         }
         uint to_caller = caller.balance;
         caller.balance = 0;
