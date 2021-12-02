@@ -77,7 +77,8 @@ contract SignalSale {
         require(this_sale.state == State.STARTED);
         // These should be impossible. We leave them in as suspenders.
         assert(this_sale.seller.balance == 0);
-        assert(this_sale.offer == address(this).balance);
+	// this.balance == offer + buyer.deposit == 2 * offer
+        assert(this_sale.offer * 2 == address(this).balance);
         this_sale.state = State.CANCELED;
         this_sale.buyer.balance = address(this).balance;
     }
