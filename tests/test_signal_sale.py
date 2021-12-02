@@ -59,40 +59,6 @@ def params():
     }
     globals().update(testing_variables)
 
-def assert_balance_math_pre_finalize(contract):
-    assert (contract.offer() +
-            contract.seller_deposit() +
-            contract.buyer_deposit()
-            ==
-            contract.balance())
-
-@pytest.fixture
-def deployed(params):
-    # We get a new contract instance for each test using this harness. Same below.
-    testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
-    globals().update(testing_variables)
-
-@pytest.fixture
-def started(params):
-    testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
-    globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
-
-@pytest.fixture
-def accepted(params):
-    testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
-    globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
-    sale_contract.accept({'from': seller, 'value': initial_deposit})
-
-@pytest.fixture
-def finalized(params):
-    testing_variables = {'sale_contract': deployer.deploy(SignalSale)}
-    globals().update(testing_variables)
-    sale_contract.start(sale_hash, seller, initial_deposit, {'from': buyer, 'value': start_value})
-    sale_contract.accept({'from': seller, 'value': initial_deposit})
-    sale_contract.finalize(0, True, {'from': buyer})
-
 def get_sale_dict(sale):
     offer, state, b, s = sale
     participant_fields = (
@@ -105,14 +71,29 @@ def get_sale_dict(sale):
         'seller': dict(zip(participant_fields, s)),
     }
 
-def test_constructor(deployed):
+@pytest.fixture
+def deployed(params):
+    globals().update({'sale_contract': deployer.deploy(SignalSale)})
+    # test this fixture's correctness
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+@pytest.fixture
+def started(params):
+    globals().update({'sale_contract': deployer.deploy(SignalSale)})
     sale_contract.start(sale_hash, seller, {'from': buyer, 'value': start_value})
-    sale = get_sale_dict(sale_contract.sales(sale_hash))
-    # Things we expect to be set by `start`.
     expected_sale['buyer']['_address'] = buyer.address
     expected_sale['buyer']['happy'] = True
     expected_sale['seller']['_address'] = seller.address
     expected_sale['seller']['happy'] = True
     expected_sale['offer'] = start_value / 2
     expected_sale['state'] = STARTED
-    assert(sale == expected_sale)
+    # test this fixture's correctness
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+# use the deployed fixture just once.
+def test_deployed_fixture(deployed):
+    pass
+
+# use the started fixture just once.
+def test_started_fixture(started):
+    pass
