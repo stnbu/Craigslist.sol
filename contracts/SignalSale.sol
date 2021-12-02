@@ -160,7 +160,7 @@ contract SignalSale {
         // this.balance == offer + buyer.deposit == 2 * offer
         assert(sales[sale_hash].offer * 2 == address(this).balance);
 
-        Sale storage sale;
+        Sale memory sale = sales[sale_hash];
         sale.state = State.CANCELED;
         sale.buyer.balance = address(this).balance;
 	sales[sale_hash] = sale;

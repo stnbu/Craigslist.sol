@@ -7,10 +7,12 @@ from brownie import SignalSale, accounts, reverts
 from brownie.convert.datatypes import HexString, EthAddress, Wei
 
 # State enum values. These need to account for any solidity changes.
-DEPLOYED = 0
+NOT_STARTED = 0
 STARTED = 1
 ACCEPTED = 2
 FINALIZED = 3
+SIGNALED = 4
+CANCELED = 5
 
 def fhex(n):
     return '0x' + n.hex()
@@ -68,15 +70,15 @@ def get_sale_dict(sale):
         'seller': dict(zip(participant_fields, s)),
     }
 
-# @pytest.fixture
-# def deployed(params):
-#     globals().update({'sale_contract': deployer.deploy(SignalSale)})
-#     # test this fixture's correctness
-#     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+@pytest.fixture
+def deployed(params):
+    globals().update({'sale_contract': deployer.deploy(SignalSale)})
+    # test this fixture's correctness
+    #  FIXME but state is None!
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
-def started(params):
-    globals().update({'sale_contract': deployer.deploy(SignalSale)})
+def started(deployed):
     sale_contract.start(sale_hash, seller, {'from': buyer, 'value': start_value})
     expected_sale['buyer']['_address'] = buyer.address
     expected_sale['buyer']['happy'] = True
@@ -87,22 +89,22 @@ def started(params):
     # test this fixture's correctness
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
-# @pytest.fixture
-# def canceled(params):
-#     globals().update({'sale_contract': deployer.deploy(SignalSale)})
-#     sale_contract.cancel(sale_hash, {'from': buyer})
-#     expected_sale['buyer']['balance'] = start_value;
-#     # test this fixture's correctness
-#     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+@pytest.fixture
+def canceled(started):
+    sale_contract.cancel(sale_hash, {'from': buyer})
+    expected_sale['buyer']['balance'] = start_value;
+    expected_sale['state'] = CANCELED
+    # test this fixture's correctness
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
-# # use the deployed fixture just once.
-# def _test_deployed_fixture(deployed):
-#     pass
+# use the deployed fixture just once.
+def test_deployed_fixture(deployed):
+    pass
 
 # use the started fixture just once.
 def test_started_fixture(started):
     pass
 
-# # use the canceled fixture just once.
-# def _test_canceled_fixture(canceled):
-#     pass
+# use the canceled fixture just once.
+def test_canceled_fixture(canceled):
+    pass
