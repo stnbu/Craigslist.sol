@@ -42,8 +42,8 @@ contract SignalSale {
     // Important:
     //
     // When either party chooses a `signal` greater than zero, that money is
-    // _taken from them_! Participants in "nominal" sales are incentive to set
-    // `signal=0`, which renders `happy` meaningless and maximizes their
+    // _taken from them_! Participants in "nominal" sales are incentivized to
+    // set `signal=0`, which renders `happy` meaningless and maximizes their
     // outcomes.
     //
     // On first impression, it may seems absurd for a user to voluntarily give
