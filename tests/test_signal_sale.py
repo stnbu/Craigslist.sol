@@ -86,7 +86,12 @@ def started(deployed):
     expected_sale['seller']['happy'] = True
     expected_sale['offer'] = start_value / 2
     expected_sale['state'] = STARTED
-    # test this fixture's correctness
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+@pytest.fixture
+def accepted(started):
+    sale_contract.accept(sale_hash, {'from': seller, 'value': start_value / 2})
+    expected_sale['state'] = ACCEPTED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
@@ -107,4 +112,8 @@ def test_started_fixture(started):
 
 # use the canceled fixture just once.
 def test_canceled_fixture(canceled):
+    pass
+
+# use the accepted fixture just once.
+def test_accepted_fixture(accepted):
     pass

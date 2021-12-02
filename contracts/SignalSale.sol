@@ -117,8 +117,8 @@ contract SignalSale {
         require(sales[sale_hash].state == State.NOT_STARTED);
 
         Sale memory sale; // "memory" creates zero values, "storage" does not.
-	                  // also, we assign to the global storage `sales` at
-	                  // the end...! Ok...?
+                          // also, we assign to the global storage `sales` at
+                          // the end...! Ok...?
         sale.offer = msg.value / 2;
         sale.state = State.STARTED;
 
@@ -131,17 +131,18 @@ contract SignalSale {
         seller._address = seller_address;
         seller.happy = true;
         sale.seller = seller;
-	sales[sale_hash] = sale;
+        sales[sale_hash] = sale;
     }
 
     function accept(bytes32 sale_hash) public payable {
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.seller._address == msg.sender);
-        require(this_sale.state == State.STARTED);
-        require(this_sale.offer == msg.value);
+        Sale memory sale = sales[sale_hash];
+        require(sale.seller._address == msg.sender);
+        require(sale.state == State.STARTED);
+        require(sale.offer == msg.value);
         // The seller has an _implicit_ deposit, by the rules of the game. No
         // need to track.
-        this_sale.state = State.ACCEPTED;
+        sale.state = State.ACCEPTED;
+        sales[sale_hash] = sale;
     }
 
     function finalize(bytes32 sale_hash, bytes32 signal_hash) public {
@@ -163,7 +164,7 @@ contract SignalSale {
         Sale memory sale = sales[sale_hash];
         sale.state = State.CANCELED;
         sale.buyer.balance = address(this).balance;
-	sales[sale_hash] = sale;
+        sales[sale_hash] = sale;
     }
 
     function sellerSignals(bytes32 sale_hash, bytes32 signal_hash) public {
