@@ -26,7 +26,7 @@ def params():
     seller = accounts[1]
     buyer = accounts[2]
 
-    _default_expected_sale = {
+    _expected_sale = {
         'offer': Wei(send_to_start / 2),
         'state': None,
         'buyer': {
@@ -57,7 +57,7 @@ def params():
         'initial_offer': send_to_start / 2,
         'initial_deposit': send_to_start / 2,
         'sale_hash': _sale_hash,
-        'default_expected_sale': _default_expected_sale,
+        'expected_sale': _expected_sale,
     }
     globals().update(testing_variables)
 
@@ -110,5 +110,5 @@ def get_sale_dict(sale):
 def test_constructor(deployed):
     sale_contract.start(sale_hash, seller, {'from': buyer, 'value': initial_send})
     sale = get_sale_dict(sale_contract.sales(sale_hash))
-    default_expected_sale['state'] = STARTED
-    assert(sale == default_expected_sale)
+    expected_sale['state'] = STARTED
+    assert(sale == expected_sale)
