@@ -114,20 +114,24 @@ contract SignalSale {
     function start(bytes32 sale_hash, address payable seller_address) public
         payable {
         require(msg.value % 2 == 0);
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.state == State.NOT_STARTED);
-        this_sale.offer = msg.value / 2;
-        this_sale.state = State.STARTED;
+        require(sales[sale_hash].state == State.NOT_STARTED);
 
-        Participant storage buyer;
+        Sale memory sale; // "memory" creates zero values, "storage" does not.
+	                  // also, we assign to the global storage `sales` at
+	                  // the end...! Ok...?
+        sale.offer = msg.value / 2;
+        sale.state = State.STARTED;
+
+        Participant memory buyer;
         buyer._address = payable(msg.sender);
         buyer.happy = true;
-        this_sale.buyer = buyer;
+        sale.buyer = buyer;
 
-        Participant storage seller;
+        Participant memory seller;
         seller._address = seller_address;
         seller.happy = true;
-        this_sale.seller = seller;
+        sale.seller = seller;
+	sales[sale_hash] = sale;
     }
 
     function accept(bytes32 sale_hash) public payable {
@@ -149,15 +153,17 @@ contract SignalSale {
     }
 
     function cancel(bytes32 sale_hash) public {
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.buyer._address == msg.sender);
-        require(this_sale.state == State.STARTED);
+        require(sales[sale_hash].buyer._address == msg.sender);
+        require(sales[sale_hash].state == State.STARTED);
         // These should be impossible. We leave them in as suspenders.
-        assert(this_sale.seller.balance == 0);
+        assert(sales[sale_hash].seller.balance == 0);
         // this.balance == offer + buyer.deposit == 2 * offer
-        assert(this_sale.offer * 2 == address(this).balance);
-        this_sale.state = State.CANCELED;
-        this_sale.buyer.balance = address(this).balance;
+        assert(sales[sale_hash].offer * 2 == address(this).balance);
+
+        Sale storage sale;
+        sale.state = State.CANCELED;
+        sale.buyer.balance = address(this).balance;
+	sales[sale_hash] = sale;
     }
 
     function sellerSignals(bytes32 sale_hash, bytes32 signal_hash) public {

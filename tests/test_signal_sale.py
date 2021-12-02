@@ -68,11 +68,11 @@ def get_sale_dict(sale):
         'seller': dict(zip(participant_fields, s)),
     }
 
-@pytest.fixture
-def deployed(params):
-    globals().update({'sale_contract': deployer.deploy(SignalSale)})
-    # test this fixture's correctness
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+# @pytest.fixture
+# def deployed(params):
+#     globals().update({'sale_contract': deployer.deploy(SignalSale)})
+#     # test this fixture's correctness
+#     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def started(params):
@@ -87,10 +87,22 @@ def started(params):
     # test this fixture's correctness
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
-# use the deployed fixture just once.
-def test_deployed_fixture(deployed):
-    pass
+# @pytest.fixture
+# def canceled(params):
+#     globals().update({'sale_contract': deployer.deploy(SignalSale)})
+#     sale_contract.cancel(sale_hash, {'from': buyer})
+#     expected_sale['buyer']['balance'] = start_value;
+#     # test this fixture's correctness
+#     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+# # use the deployed fixture just once.
+# def _test_deployed_fixture(deployed):
+#     pass
 
 # use the started fixture just once.
 def test_started_fixture(started):
     pass
+
+# # use the canceled fixture just once.
+# def _test_canceled_fixture(canceled):
+#     pass
