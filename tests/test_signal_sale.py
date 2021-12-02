@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import itertools
 import pytest
-from brownie import SignalSale, accounts, reverts
+from brownie import SignalSale, accounts
 from brownie.convert.datatypes import HexString, EthAddress, Wei
 
 # State enum values. These need to account for any solidity changes.
