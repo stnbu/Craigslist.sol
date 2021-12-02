@@ -146,11 +146,12 @@ contract SignalSale {
     }
 
     function finalize(bytes32 sale_hash, bytes32 signal_hash) public {
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.buyer._address == msg.sender);
-        require(this_sale.state == State.ACCEPTED);
-        this_sale.state = State.FINALIZED;
-        this_sale.buyer.signal_hash = signal_hash;
+        Sale memory sale = sales[sale_hash];
+        require(sale.buyer._address == msg.sender);
+        require(sale.state == State.ACCEPTED);
+        sale.state = State.FINALIZED;
+        sale.buyer.signal_hash = signal_hash;
+        sales[sale_hash] = sale;
     }
 
     function cancel(bytes32 sale_hash) public {

@@ -12,6 +12,9 @@ FINALIZED = 3
 SIGNALED = 4
 CANCELED = 5
 
+def fhex(n):
+    return '0x' + n.hex()
+
 @pytest.fixture
 def params():
     _expected_sale = {
@@ -69,7 +72,7 @@ def get_sale_dict(sale):
 def deployed(params):
     globals().update({'sale_contract': deployer.deploy(SignalSale)})
     # FIXME: At this point LHS state=None and RHS state=0, but this passes.
-    # The following line should be required!
+    # The following line SHOULD be required!
     #expected_sale['state'] = NOT_STARTED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
@@ -95,7 +98,14 @@ def canceled(started):
     sale_contract.cancel(sale_hash, {'from': buyer})
     expected_sale['buyer']['balance'] = start_value;
     expected_sale['state'] = CANCELED
-    # test this fixture's correctness
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+@pytest.fixture
+def finalized(accepted):
+    signal_hash = sale_hash # FIXME: hack4now
+    sale_contract.finalize(sale_hash, signal_hash, {'from': buyer})
+    expected_sale['buyer']['signal_hash'] = fhex(signal_hash)
+    expected_sale['state'] = FINALIZED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 # use the deployed fixture just once.
@@ -112,4 +122,8 @@ def test_canceled_fixture(canceled):
 
 # use the accepted fixture just once.
 def test_accepted_fixture(accepted):
+    pass
+
+# use the finalized fixture just once.
+def test_finalized_fixture(finalized):
     pass
