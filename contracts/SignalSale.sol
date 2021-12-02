@@ -2,10 +2,6 @@ pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 contract SignalSale {
-
-    // [gigantic hole] There is nothing stopping e.g. a seller from writing a
-    // bot to pump their ratings without end. Ooops? Might need another turtle.
-
     // After deploying this contract:
     //
     // 1) Buyer starts a sale with a pre-arranged "sale hash" and the seller's
@@ -83,30 +79,6 @@ contract SignalSale {
     // Not only does this hurt the seller, but many purchases down the road, it
     // becomes clear that you are a good-faith actor. That penalty increases in
     // value in proportion to your reputation.
-
-    // TBD:
-    //
-    // * All data for all sales are traceable, but this data is not stored in a
-    // particularly efficient way from the "traceability" point of view. This is
-    // intentional: contracts should be very terse and efficient. The work
-    // required to go through _millions_ of sales in this contract is minuscule
-    // for a single server that has access to the blockchain. In production, a
-    // process (on a server) will need to calculate helpful metrics for future
-    // prospective buyers and sellers. After extraction from this contract's
-    // on-chain storage, e.g. a website can present helpful metrics on a
-    // per-buyer or per-seller basis (pie charts, graphs, smileys, ratios,
-    // factors...)
-    //
-    // * A "client" for interacting with this contract.
-    //
-    // * A whole horde of users. Addresses that have participated in many sales
-    // will have a meaningful reputation. For example, a "good" seller might be
-    // one with 1000 sales, all where the buyer has burned zero. A _great_
-    // seller might be someone with 10,000 sales with no burned (unhappy)
-    // signals and an average of 200 Wei in "happy" signals per sale (ad
-    // infinitum). If there are sellers on this system with a positive happy
-    // signal and zero negative signal and have 800 sales, then that user is
-    // probably a better bet than Beanies003@eBay (imho).
 
     enum State {
         NOT_STARTED,
@@ -254,3 +226,57 @@ contract SignalSale {
         caller._address.transfer(to_caller);
     }
 }
+
+// ## Stuff that was on the top but now is on the bottom:
+//
+// [gigantic hole] There is nothing stopping e.g. a seller from writing a bot to
+// pump their ratings without end. Ooops? Might need another turtle.
+//
+// [gigantic putty] If n% of both ends' deposit got _burned_ every time, that
+// would be a dial that could be adjusted up or down. Got to burn coal to prove
+// you created bitcoin => got to burn ether to prove that you are /on/ this
+// system. Ethereum has this concept built in: gas. If we have a concept of
+// "overall commitment" requiring actors to burn some Wei in order to
+// participate, we would filter out (for the right position of "dial")
+// participants that want to use spam techniques to bump their reputation. They
+// have to pay gas costs to do this, but how sure can we be that this is enough?
+// Is there a mechanism that could 'dial this in' automatically.
+//
+// AND BY THE WAY, burning 90000 Wei with each transaction would be a lot
+// cheaper than the overhead you pay indirectly for e.g. eBay.
+//
+// [more putty] Also, the reputation of the buyer wallets in a spamming
+// situation would have to be taken into account. There could be all kinds of
+// methods to determine if participant is a botnet: do the wallets get their
+// value from the same wallets? If you grab a selection of wallets the seller
+// clams were legitimate sales, what is their _simultaneous_ balance when the
+// sale took place? In other words: if a single seller is using subterfuge to
+// make fake sales look like real sales, You should be able to do enough
+// sampling and "analysis" to figure out if all these auto-created drone wallets
+// shared the same _actual money_. If you have a million dollars, you can make
+// two 500k wallets appear at the same time, you can make two million dollar
+// wallets appear, _but not at the same time_.  The wallets of the claimed
+// "buyers" are subject to this analysis. Maybe.
+//
+// TBD:
+//
+// * All data for all sales are traceable, but this data is not stored in a
+// particularly efficient way from the "traceability" point of view. This is
+// intentional: contracts should be very terse and efficient. The work required
+// to go through _millions_ of sales in this contract is minuscule for a single
+// server that has access to the blockchain. In production, a process (on a
+// server) will need to calculate helpful metrics for future prospective buyers
+// and sellers. After extraction from this contract's on-chain storage, e.g. a
+// website can present helpful metrics on a per-buyer or per-seller basis (pie
+// charts, graphs, smileys, ratios, factors...)
+// * A "client" for interacting with this contract.
+// * A whole horde of users. Addresses that have participated in many sales will
+// have a meaningful reputation. For example, a "good" seller might be one with
+// 1000 sales, all where the buyer has burned zero. A _great_ seller might be
+// someone with 10,000 sales with no burned (unhappy) signals and an average of
+// 200 Wei in "happy" signals per sale (ad infinitum). If there are sellers on
+// this system with a positive happy signal and zero negative signal and have
+// 800 sales, then that user is probably a better bet than Beanies003@eBay
+// (imho).
+// * A way to carry "reputation" with you but still leaving your original
+// identity behind. Not required, but would be cool.
