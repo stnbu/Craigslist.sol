@@ -17,7 +17,6 @@ def fhex(n):
 
 @pytest.fixture
 def params():
-
     _expected_sale = {
         'offer': Wei(0),
         'state': None,
@@ -50,6 +49,9 @@ def params():
         'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
                       b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
                       b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
+        # This gets incrementally updated and confirmed _by each state fixture_.
+        # If a fixture is not used this does not get checked! Tests can update
+        # the expected `Sale` incrementally as needed for more sophistocated tests.
         'expected_sale': _expected_sale,
     }
     globals().update(testing_variables)
