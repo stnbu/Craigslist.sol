@@ -3,6 +3,105 @@ pragma experimental ABIEncoderV2;
 
 contract SignalSale {
 
+    // [gigantic hole] There is nothing stopping e.g. a seller from writing a
+    // bot to pump their ratings without end. Ooops? Might need another turtle.
+
+    // After deploying this contract:
+    //
+    // 1) Buyer starts a sale with a pre-arranged "sale hash" and the seller's
+    // address as input. The value sent to `start` must be twice the intended
+    // offer: half becomes the offer and the other half becomes he buyer's
+    // deposit.
+    // 2) After the sale is started...
+    //   a) Seller calls `approve` sending their deposit, which must equal the
+    //      offer. Calling `approve` means the seller intends to transfer
+    //      (e.g. ship) the item being sold.
+    //   b) Or, the buyer calls `cancel` for a full refund at any time before
+    //      seller calls `approve`.
+    // 3) The buyer calls `finalize`, along with their "signal hash". By calling
+    // `finalize` the buyer is indicating that the item has been received OR
+    //  they have given up on the seller ever coming through. `signal_hash` is
+    // `keccak256(abi.encodePacked(salt, signal, happy))` where,
+    //   * `salt` is some random bytes (which must be retained by the buyer!)
+    //   * `signal` is a positive integer to be "burned" as a signal. This is
+    //      the signal's "magnitude".
+    //   * `happy` is a boolean, This is the signal's "sign": happy means the
+    //     `signal` goes to seller. Not happy means the `signal` gets _burned_
+    //     (goes to the zero address.)
+    // 4) The seller calls `sellerSignals`. This is mandatory and is the only
+    // opportunity the seller will have to set the signal. The format, reasoning
+    // and arithmetic for the seller's "signal hash" is the same as for the
+    // buyer.
+    // 5) The buyer and seller _both_ call `reveal`, which reveals and records
+    // their signals. This is done after the sale is "finalized" and both have
+    // permanently recorded their signal hash so neither is able to change their
+    // signal to punish the other for an "unjust signal".
+    // 6) The buyer and seller both call `withdraw`, which permits them to
+    // withdraw funds, after adjustments for "signaling".
+
+    // Important:
+    //
+    // When either party chooses a `signal` greater than zero, that money is _taken from them_! Participants in "nominal" sales are incentive to set `signal=0`, which renders `happy` meaningless and maximizes their outcomes.
+    //
+    // On first impression, it may seems absurd for a user to voluntarily give up some of their deposit, especially if it is simply burnt, but imagine a few scenarios:
+    //
+    // Example:
+    //
+    // You are buying a $200 guitar from a seller who has 2000 sales and no
+    // unhappy signals. Most of these sales were made in the last year, some of
+    // them for large amounts of money. All signs point to this being a safe
+    // bet. After all, it's only a $200 guitar. Seems like a reasonable bet.
+    //
+    // Suppose you go through with this sale and it becomes apparent that this
+    // user clearly acts unfairly and it's apparent (somehow) that you simply
+    // just got ripped off by this sparkling clean user... what would you do?
+    //
+    // Would you swear off the system forever? What if the last 300 sales of
+    // this seller were all $200 guitars and all ended with no unhappies and
+    // they were all in the last month. Why would you be hesitant? You can trust
+    // the values on the system because they are all signed by the relevant
+    // keys.
+    //
+    // You can even examine the balance of buyers' wallets at the time of sale
+    // to get a gauge on how "big" the players are. You can also examine the reputation of these buyers.
+    // An experienced, reputable buyer that understands how the system works would
+    // not hesitate to signal unhappy to some extent if they were screwed over a $200 guitar.
+    //
+    // You have no recourse. There is nothing else you can do but vote with a
+    // few of you $200 (which you laid down as a deposit when you called
+    // `start`.) And obviously, for you, `happy != true`, so you choose to be
+    // the first of 2001 sales to cast a negative vote and significantly ding
+    // this seller's reputation. BAM! You burn $5 in the direction of this
+    // newly-sketchy seller.
+    //
+    // Not only does this hurt the seller, but many purchases down the road, it
+    // becomes clear that you are a good-faith actor. That penalty increases in
+    // value in proportion to your reputation.
+
+    // TBD:
+    //
+    // * All data for all sales are traceable, but this data is not stored in a
+    // particularly efficient way from the "traceability" point of view. This
+    // is intentional: contracts should be very terse and efficient. The work
+    // required to go through _millions_ of sales in this contract is minuscule
+    // for a single server that has access to the blockchain. In production, a
+    // process (on a server) will need to calculate helpful metrics for future
+    // prospective buyers and sellers. After extraction from this contract's
+    // on-chain storage, e.g. a website can present helpful metrics on a
+    // per-buyer or per-seller basis (pie charts, graphs, smileys, ratios,
+    // factors...)
+    //
+    // * A "client" for interacting with this contract.
+    //
+    // * A whole horde of users. Addresses that have participated in many sales
+    // will have a meaningful reputation. For example, a "good" seller might be
+    // one with 1000 sales, all where the buyer has burned zero. A _great_
+    // seller might be someone with 10,000 sales with no burned (unhappy)
+    // signals and an average of 200 Wei in "happy" signals per sale (ad
+    // infinitum). If there are sellers on this system with a positive happy
+    // signal and zero negative signal and have 800 sales, then that user is
+    // probably a better bet than Beanies003@eBay (imho).
+
     enum State {
         NOT_STARTED,
         STARTED,
@@ -135,8 +234,8 @@ contract SignalSale {
     function withdraw(bytes32 sale_hash) public {
         Sale storage this_sale = sales[sale_hash];
         require(
-		((this_sale.state == State.SIGNALED) &&
-		 (this_sale.seller.revealed && this_sale.buyer.revealed))
+                ((this_sale.state == State.SIGNALED) &&
+                 (this_sale.seller.revealed && this_sale.buyer.revealed))
                 ||
                 (this_sale.state == State.CANCELED));
         Participant memory caller = thisParticipant(this_sale);
