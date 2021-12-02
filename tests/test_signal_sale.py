@@ -4,6 +4,8 @@ import itertools
 import pytest
 from brownie import SignalSale, accounts, reverts
 
+from brownie.convert.datatypes import HexString, EthAddress, Wei
+
 # State enum values. These need to account for any solidity changes.
 DEPLOYED = 0
 STARTED = 1
@@ -15,20 +17,47 @@ def fhex(n):
 
 @pytest.fixture
 def params():
-    send_to_start = 10  # yes, ten Wei. Is there an argument to use "realistic
-                        # amounts of money"?
-    # NOTE MAGIC HACK: these are "injected" via a globals update.
+    send_to_start = 10
+    # This is just "any bytes32". Hardcoded for now.
+    _sale_hash = (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
+                  b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
+                  b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r')
+    deployer = accounts[0]
+    seller = accounts[1]
+    buyer = accounts[2]
+
+    _default_expected_sale = {
+        'offer': Wei(send_to_start / 2),
+        'state': None,
+        'buyer': {
+            '_address': buyer,
+            'balance': Wei(0),
+            'happy': True,
+            'revealed': False,
+            'salt': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'signal': Wei(0),
+            'signal_hash': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+        },
+        'seller': {
+            '_address': seller,
+            'balance': Wei(0),
+            'happy': True,
+            'revealed': False,
+            'salt': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+            'signal': Wei(0),
+            'signal_hash': HexString('0x0000000000000000000000000000000000000000000000000000000000000000', 'bytes32'),
+        },
+    }
+
     testing_variables = {
-        'deployer': accounts[0],
-        'buyer': accounts[1],
-        'seller': accounts[2],
-        # This is just "any bytes32". Hardcoded for now.
-        'sale_hash': (b'f\xd0Y\xea\x1e\x9b5\x10\xfcV\xa0'
-                      b'\xba\xa4\x15\xd7\x0e\r\xb0g\xde'
-                      b'\x13%\x84v\xfe\xe6(\xa5\xf9\x94\xd5\r'),
+        'deployer': deployer,
+        'buyer': buyer,
+        'seller': seller,
         'initial_send': send_to_start,
         'initial_offer': send_to_start / 2,
         'initial_deposit': send_to_start / 2,
+        'sale_hash': _sale_hash,
+        'default_expected_sale': _default_expected_sale,
     }
     globals().update(testing_variables)
 
@@ -66,84 +95,20 @@ def finalized(params):
     sale_contract.accept({'from': seller, 'value': initial_deposit})
     sale_contract.finalize(0, True, {'from': buyer})
 
+def get_sale_dict(sale):
+    offer, state, b, s = sale
+    participant_fields = (
+        '_address', 'revealed', 'signal',
+        'happy', 'signal_hash', 'salt', 'balance')
+    return {
+        'offer': offer,
+        'state': state,
+        'buyer': dict(zip(participant_fields, b)),
+        'seller': dict(zip(participant_fields, s)),
+    }
+
 def test_constructor(deployed):
-    assert sale_contract.seller_address() == '0x' + '0' * 40
-    assert sale_contract.buyer_address() == '0x' + '0' * 40
-    assert sale_contract.state() == DEPLOYED
-    assert sale_contract.offer() == 0;
-    assert sale_contract.buyer_deposit() == 0;
-    assert sale_contract.seller_deposit() == 0;
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_start_deposit_too_small(deployed):
-    with reverts():
-        sale_contract.start(sale_hash, seller, initial_deposit - 1, {'from': buyer, 'value': initial_send})
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_blind_call_to_accept(deployed):
-    # This should revert because
-    #   1. state!=STARTED
-    #   2. seller_address is uninitialized
-    with reverts():
-        sale_contract.accept({'from': seller, 'value': initial_offer})
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_reject_deployed(deployed):
-    for caller in [buyer, seller]:
-        with reverts():
-            sale_contract.reject({'from': caller})
-            assert_balance_math_pre_finalize(sale_contract)
-
-def test_state_started(started):
-    assert sale_contract.sale_hash() == fhex(sale_hash)
-    assert sale_contract.seller_address() == seller.address
-    assert sale_contract.buyer_address() == buyer.address
-    assert sale_contract.state() == STARTED
-    assert sale_contract.offer() == initial_offer
-    assert sale_contract.seller_deposit() == 0
-    assert sale_contract.buyer_deposit() == initial_deposit
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_reject_started_seller(started):
-    sale_contract.reject({'from': seller})
-    with pytest.raises(AssertionError): # because we do not update `offer`, et al on reject
-        assert_balance_math_pre_finalize(sale_contract)
-
-def test_reject_started_buyer(started):
-    sale_contract.reject({'from': buyer})
-    with pytest.raises(AssertionError): # because we do not update `offer`, et al on reject
-        assert_balance_math_pre_finalize(sale_contract)
-
-def test_accept_deposit_too_small(started):
-    with reverts():
-        sale_contract.accept({'from': seller, 'value': initial_offer - 1})
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_state_accepted(accepted):
-    assert sale_contract.sale_hash() == fhex(sale_hash)
-    assert sale_contract.seller_address() == seller.address
-    assert sale_contract.buyer_address() == buyer.address
-    assert sale_contract.state() == ACCEPTED
-    assert sale_contract.offer() == initial_offer
-    assert sale_contract.seller_deposit() == initial_deposit
-    assert sale_contract.buyer_deposit() == initial_deposit
-    assert_balance_math_pre_finalize(sale_contract)
-
-def test_reject_after_accepted(accepted):
-    for caller in [buyer, seller]:
-        with reverts():
-            sale_contract.reject({'from': caller})
-            assert_balance_math_pre_finalize(sale_contract)
-
-def test_state_finalized(finalized):
-    assert sale_contract.sale_hash() == fhex(sale_hash)
-    assert sale_contract.seller_address() == seller.address
-    assert sale_contract.buyer_address() == buyer.address
-    assert sale_contract.state() == FINALIZED
-    assert sale_contract.offer() == initial_offer
-    # These public variables retain their last set value.
-    # They do not reflect any fund transfers.
-    assert sale_contract.seller_deposit() == initial_deposit
-    assert sale_contract.buyer_deposit() == initial_deposit
-    with pytest.raises(AssertionError): # because we do not update on finalize
-        assert_balance_math_pre_finalize(sale_contract)
+    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': initial_send})
+    sale = get_sale_dict(sale_contract.sales(sale_hash))
+    default_expected_sale['state'] = STARTED
+    assert(sale == default_expected_sale)
