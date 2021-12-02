@@ -13,9 +13,6 @@ FINALIZED = 3
 SIGNALED = 4
 CANCELED = 5
 
-def fhex(n):
-    return '0x' + n.hex()
-
 @pytest.fixture
 def params():
     _expected_sale = {
