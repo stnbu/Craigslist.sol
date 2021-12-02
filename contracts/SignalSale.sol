@@ -134,8 +134,11 @@ contract SignalSale {
 
     function withdraw(bytes32 sale_hash) public {
         Sale storage this_sale = sales[sale_hash];
-        require(this_sale.state == State.SIGNALED);
-        require(this_sale.seller.revealed && this_sale.buyer.revealed);
+        require(
+		((this_sale.state == State.SIGNALED) &&
+		 (this_sale.seller.revealed && this_sale.buyer.revealed))
+		||
+		(this_sale.state == State.CANCELED));
         Participant memory caller = thisParticipant(this_sale);
         Participant memory other = otherParticipant(this_sale);
         if (!other.happy) {
