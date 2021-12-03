@@ -207,6 +207,18 @@ contract SignalSale {
         // "Warning: If you use ...encodePacked"
         Sale memory sale = sales[sale_hash];
         require(sale.state == State.SIGNALED);
+
+        uint due_to_other;
+        if (sale.buyer._address == msg.sender) {
+            // due to the SELLER: offer + her deposit
+            due_to_other = sale.offer * 2;
+        } else if (sale.seller._address == msg.sender) {
+            // due to the BUYER: offer + his deposit
+            due_to_other = sale.offer;
+        } else {
+            revert();
+        }
+
         Participant memory caller = thisParticipant(sale);
 
         require(caller.signal_hash ==
@@ -218,9 +230,9 @@ contract SignalSale {
         Participant memory other = otherParticipant(sale);
         caller.balance -= int(signal);
         if (caller.happy) {
-            other.balance += int(sale.offer / 2 + signal);
+            other.balance += int(due_to_other + signal);
         } else {
-            other.balance += int(sale.offer / 2);
+            other.balance += int(due_to_other);
         }
         sales[sale_hash] = sale;
     }
