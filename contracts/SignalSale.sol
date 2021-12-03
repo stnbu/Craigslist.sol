@@ -99,8 +99,7 @@ contract SignalSale {
         bool happy;
         bytes32 signal_hash;
         bytes32 salt;
-        // FIXME: needs to be int (signed)
-        uint balance; // Signed because we need to allow negative balance
+        int balance; // Signed because we need to allow negative balance
                       // (before withdrawl at which point it must be >=0 or we
                       // have broken logic.)
     }
@@ -167,7 +166,7 @@ contract SignalSale {
 
         Sale memory sale = sales[sale_hash];
         sale.state = State.CANCELED;
-        sale.buyer.balance = address(this).balance;
+        sale.buyer.balance = int(address(this).balance);
         sales[sale_hash] = sale;
     }
 
@@ -217,10 +216,11 @@ contract SignalSale {
         caller.happy = happy;
 
         Participant memory other = otherParticipant(sale);
+        caller.balance -= int(signal);
         if (caller.happy) {
-            other.balance = sale.offer / 2 + signal;
+            other.balance += int(sale.offer / 2 + signal);
         } else {
-            other.balance = sale.offer / 2;
+            other.balance += int(sale.offer / 2);
         }
         sales[sale_hash] = sale;
     }
@@ -237,7 +237,9 @@ contract SignalSale {
         if (!other.happy) {
             payable(address(0)).transfer(other.signal);
         }
-        uint to_caller = caller.balance;
+        // until we can rule it out...
+        assert(caller.balance >= 0);
+        uint to_caller = uint(caller.balance);
         caller.balance = 0;
         caller._address.transfer(to_caller);
     }
