@@ -33,7 +33,7 @@ def params():
         [
             _seller_salt,
             1,
-            False
+            True
         ]
     )
     _expected_sale = {
@@ -138,6 +138,14 @@ def signaled(finalized):
     expected_sale['state'] = SIGNALED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
+@pytest.fixture
+def revealed(signaled):
+    sale_contract.reveal(sale_hash, seller_salt, 1, True, {'from': seller})
+    expected_sale['seller']['signal'] = 1
+    expected_sale['seller']['happy'] = True
+    raise Exception
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
 # use the deployed fixture just once.
 def test_deployed_fixture(deployed):
     pass
@@ -160,4 +168,8 @@ def test_finalized_fixture(finalized):
 
 # use the signaled fixture just once.
 def test_signaled_fixture(signaled):
+    pass
+
+# use the revealed fixture just once.
+def test_revealed_fixture(revealed):
     pass

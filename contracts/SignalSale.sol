@@ -99,7 +99,10 @@ contract SignalSale {
         bool happy;
         bytes32 signal_hash;
         bytes32 salt;
-        uint balance;
+	// FIXME: needs to be uint
+        uint balance; // Signed because we need to allow negative balance (before
+                     // withdrawl at which point it must be >=0 or we have
+                     // broken logic.)
     }
 
     struct Sale {
@@ -199,23 +202,27 @@ contract SignalSale {
         }
     }
 
-    function reveal(bytes32 sale_hash, uint salt, uint signal, bool happy)
+    function reveal(bytes32 sale_hash, bytes32 salt, uint signal, bool happy)
         public {
-        Sale storage this_sale = sales[sale_hash];
-        require(this_sale.state == State.SIGNALED);
-        Participant memory caller = thisParticipant(this_sale);
+        // FIXME: see https://docs.soliditylang.org/en/v0.8.9/abi-spec.html
+        // "Warning: If you use ...encodePacked"
+        Sale memory sale = sales[sale_hash];
+        require(sale.state == State.SIGNALED);
+        Participant memory caller = thisParticipant(sale);
+
         require(caller.signal_hash ==
                 keccak256(abi.encodePacked(salt, signal, happy)));
         caller.revealed = true;
         caller.signal = signal;
         caller.happy = happy;
 
-        Participant memory other = otherParticipant(this_sale);
+        Participant memory other = otherParticipant(sale);
         if (caller.happy) {
-            other.balance = this_sale.offer / 2 + signal;
+            other.balance = sale.offer / 2 + signal;
         } else {
-            other.balance = this_sale.offer / 2;
+            other.balance = sale.offer / 2;
         }
+        sales[sale_hash] = sale;
     }
 
     function withdraw(bytes32 sale_hash) public {
@@ -269,6 +276,7 @@ contract SignalSale {
 //
 // TBD:
 //
+// * What about [escrow](https://youtu.be/OZmO_7JBeao)?
 // * All data for all sales are traceable, but this data is not stored in a
 // particularly efficient way from the "traceability" point of view. This is
 // intentional: contracts should be very terse and efficient. The work required
