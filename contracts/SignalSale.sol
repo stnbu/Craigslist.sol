@@ -99,10 +99,10 @@ contract SignalSale {
         bool happy;
         bytes32 signal_hash;
         bytes32 salt;
-	// FIXME: needs to be uint
-        uint balance; // Signed because we need to allow negative balance (before
-                     // withdrawl at which point it must be >=0 or we have
-                     // broken logic.)
+        // FIXME: needs to be int (signed)
+        uint balance; // Signed because we need to allow negative balance
+                      // (before withdrawl at which point it must be >=0 or we
+                      // have broken logic.)
     }
 
     struct Sale {
