@@ -161,7 +161,7 @@ def revealed(signaled):
     expected_sale['buyer']['revealed'] = True
     expected_sale['buyer']['signal'] = buyer_signal.signal
     expected_sale['buyer']['happy'] = buyer_signal.happy
-    expected_sale['buyer']['balance'] = -1
+    expected_sale['buyer']['balance'] = 1
     expected_sale['seller']['balance'] = 2
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
