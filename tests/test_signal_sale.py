@@ -178,6 +178,10 @@ def withdrawn(revealed):
     expected_sale['seller']['balance'] = 0
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
+    sale_contract.withdraw(sale_hash, {'from': buyer})
+    expected_sale['buyer']['balance'] = 0
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
 
 # use the deployed fixture just once.
 def test_deployed_fixture(deployed):
