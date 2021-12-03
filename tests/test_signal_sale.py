@@ -175,6 +175,7 @@ def revealed(signaled):
 @pytest.fixture
 def withdrawn(revealed):
     sale_contract.withdraw(sale_hash, {'from': seller})
+    expected_sale['seller']['balance'] = 0
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 

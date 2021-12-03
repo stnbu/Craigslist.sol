@@ -236,14 +236,14 @@ contract SignalSale {
     }
 
     function withdraw(bytes32 sale_hash) public {
-        Sale storage this_sale = sales[sale_hash];
+        Sale memory sale = sales[sale_hash];
         require(
-                ((this_sale.state == State.SIGNALED) &&
-                 (this_sale.seller.revealed && this_sale.buyer.revealed))
+                ((sale.state == State.SIGNALED) &&
+                 (sale.seller.revealed && sale.buyer.revealed))
                 ||
-                (this_sale.state == State.CANCELED));
-        Participant memory caller = thisParticipant(this_sale);
-        Participant memory other = otherParticipant(this_sale);
+                (sale.state == State.CANCELED));
+        Participant memory caller = thisParticipant(sale);
+        Participant memory other = otherParticipant(sale);
         if (!other.happy) {
             payable(address(0)).transfer(other.signal);
         }
@@ -252,6 +252,7 @@ contract SignalSale {
         uint to_caller = uint(caller.balance);
         caller.balance = 0;
         caller._address.transfer(to_caller);
+        sales[sale_hash] = sale;
     }
 }
 
