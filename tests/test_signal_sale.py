@@ -48,7 +48,6 @@ def params():
         'happy': False
     }, _seller)
 
-    _start_value = 10
 
     _expected_sale = {
         'state': None,
@@ -73,9 +72,11 @@ def params():
         },
     }
 
+    _start_value = 10
+
     testing_variables = {
-        'start_value': _start_value,
-        'deposit_amount': _start_value / 2,
+        'offer': _start_value / 2,
+        'deposit': _start_value / 2,
         'deployer': _deployer,
         'buyer': _buyer,
         'seller': _seller,
@@ -114,8 +115,8 @@ def deployed(params):
 
 @pytest.fixture
 def started(deployed):
-    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': start_value})
-    expected_sale['offer'] = start_value / 2
+    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit})
+    expected_sale['offer'] = offer
     expected_sale['buyer']['_address'] = buyer.address
     expected_sale['buyer']['happy'] = True
     expected_sale['seller']['_address'] = seller.address
@@ -125,14 +126,14 @@ def started(deployed):
 
 @pytest.fixture
 def accepted(started):
-    sale_contract.accept(sale_hash, {'from': seller, 'value': start_value / 2})
+    sale_contract.accept(sale_hash, {'from': seller, 'value': deposit})
     expected_sale['state'] = ACCEPTED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def canceled(started):
     sale_contract.cancel(sale_hash, {'from': buyer})
-    expected_sale['buyer']['balance'] = start_value;
+    expected_sale['buyer']['balance'] = offer + deposit;
     expected_sale['state'] = CANCELED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
@@ -157,7 +158,7 @@ def revealed(signaled):
     expected_sale['seller']['signal'] = seller_signal.signal
     expected_sale['seller']['happy'] = seller_signal.happy
     expected_sale['seller']['balance'] -= seller_signal.signal
-    expected_sale['buyer']['balance'] += start_value / 2 ## FIXME. names.
+    expected_sale['buyer']['balance'] += deposit # buyer's deposit
     expected_sale['buyer']['balance'] += seller_signal.signal if seller_signal.happy else 0
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
@@ -166,7 +167,7 @@ def revealed(signaled):
     expected_sale['buyer']['signal'] = buyer_signal.signal
     expected_sale['buyer']['happy'] = buyer_signal.happy
     expected_sale['buyer']['balance'] -= buyer_signal.signal
-    expected_sale['seller']['balance'] += start_value
+    expected_sale['seller']['balance'] += offer + deposit # seller's deposit
     expected_sale['seller']['balance'] += buyer_signal.signal if buyer_signal.happy else 0
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
