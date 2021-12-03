@@ -208,16 +208,6 @@ contract SignalSale {
         Sale memory sale = sales[sale_hash];
         require(sale.state == State.SIGNALED);
 
-        uint due_to_other;
-        if (sale.buyer._address == msg.sender) {
-            // due to the SELLER: offer + her deposit
-            due_to_other = sale.offer * 2;
-        } else if (sale.seller._address == msg.sender) {
-            // due to the BUYER: offer + his deposit
-            due_to_other = sale.offer;
-        } else {
-            revert();
-        }
 
         Participant memory caller = thisParticipant(sale);
 
@@ -228,11 +218,19 @@ contract SignalSale {
         caller.happy = happy;
 
         Participant memory other = otherParticipant(sale);
+
         caller.balance -= int(signal);
-        if (caller.happy) {
-            other.balance += int(due_to_other + signal);
+        if (sale.buyer._address == msg.sender) {
+            // due to the SELLER: offer + her deposit
+            other.balance += int(sale.offer * 2);
+        } else if (sale.seller._address == msg.sender) {
+            // due to the BUYER: his deposit only
+            other.balance += int(sale.offer);
         } else {
-            other.balance += int(due_to_other);
+            revert();
+        }
+        if (caller.happy) {
+            other.balance += int(signal);
         }
         sales[sale_hash] = sale;
     }
