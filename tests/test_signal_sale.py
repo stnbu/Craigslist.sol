@@ -167,7 +167,7 @@ def revealed(signaled):
 
 
 @pytest.fixture
-def xxx(revealed):
+def withdrawn(revealed):
     sale_contract.withdraw(sale_hash, {'from': seller})
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
@@ -201,5 +201,5 @@ def test_revealed_fixture(revealed):
     pass
 
 # use the withdrawn fixture just once.
-def test_withdrawn_fixture(xxx):
+def test_withdrawn_fixture(withdrawn):
     pass
