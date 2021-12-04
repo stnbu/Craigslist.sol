@@ -15,11 +15,11 @@ def keccak_abiencodePacked(abi_types, values):
             in zip(abi_types, normalized_values)
         ))
     )
-    return Web3.keccak(hexstr=hex_string)
+    return Web3.keccak(text=hex_string)
 
 if __name__ == '__main__':
-    print(keccak_abiencodePacked(['uint256'], [42]))
+    print(keccak_abiencodePacked(['uint256'], [42]).hex())
     #h = b'0xcc7bf8047cc42408b0f5ef243862b29360bf96d80a3a4aa49e725322e824bc86'
-    #h = HexString('0xb10beef', 'bytes32')
-    #print(keccak_abiencodePacked(['bytes32'], h))
+    h = HexString('0xb10beef', 'bytes32')
+    print(keccak_abiencodePacked(['bytes32'], h))
     #print(keccak_abiencodePacked(['uint8', 'uint256', 'bool'], [42, 42, False]))

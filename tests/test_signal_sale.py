@@ -2,7 +2,7 @@
 
 import pytest
 import web3
-from brownie import accounts, SignalSale, SolidityHelpers
+from brownie import accounts, reverts, SignalSale, SolidityHelpers
 from brownie.convert.datatypes import HexString, EthAddress, Wei
 
 # State enum values. These need to account for any solidity changes.
@@ -183,34 +183,21 @@ def withdrawn(revealed):
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
 
-# use the deployed fixture just once.
-def test_deployed_fixture(deployed):
-    pass
+# These just exist to force the above fixtures to run. Any fixtures that are
+# used elsewhere can be removed from the below wrappers.
+def test_deployed_fixture(deployed): pass
+def test_started_fixture(started): pass
+def test_canceled_fixture(canceled): pass
+def test_accepted_fixture(accepted): pass
+def test_finalized_fixture(finalized): pass
+def test_signaled_fixture(signaled): pass
+def test_revealed_fixture(revealed): pass
+def test_withdrawn_fixture(withdrawn): pass
 
-# use the started fixture just once.
-def test_started_fixture(started):
-    pass
-
-# use the canceled fixture just once.
-def test_canceled_fixture(canceled):
-    pass
-
-# use the accepted fixture just once.
-def test_accepted_fixture(accepted):
-    pass
-
-# use the finalized fixture just once.
-def test_finalized_fixture(finalized):
-    pass
-
-# use the signaled fixture just once.
-def test_signaled_fixture(signaled):
-    pass
-
-# use the revealed fixture just once.
-def test_revealed_fixture(revealed):
-    pass
-
-# use the withdrawn fixture just once.
-def test_withdrawn_fixture(withdrawn):
-    pass
+def test_canceled_withdrawl(started):
+    with reverts():
+        sale_contract.cancel(sale_hash, {'from': seller})
+    sale_contract.cancel(sale_hash, {'from': buyer})
+    expected_sale['buyer']['balance'] = offer + deposit;
+    expected_sale['state'] = CANCELED
+    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
