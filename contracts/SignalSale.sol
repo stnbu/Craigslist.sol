@@ -111,17 +111,39 @@ contract SignalSale {
         Participant seller;
     }
 
-    mapping(bytes32 => Sale) public sales;
+    uint constant BOND = 100; // pretty cheap!
+
+    mapping(bytes32 => Sale) public sales; // pretty sure we want private
+
+    enum BondStatus {
+        NEVER_BONDED,
+        CURRENTLY_BONDED,
+        LAPSED // "WAS_BONDED"??
+    }
+
+    mapping(address => BondStatus) public bonds;
 
     function start(bytes32 sale_hash, address payable seller_address) public
         payable {
-        require(msg.value % 2 == 0);
+
+        uint available = msg.value;
+        BondStatus bond = bonds[msg.sender];
+        require(bond != BondStatus.LAPSED);
+        if (bond == BondStatus.NEVER_BONDED) {
+            if (msg.value < BOND) {
+                revert();
+            }
+            available -= BOND;
+            bond = BondStatus.CURRENTLY_BONDED;
+        }
+
+        require(available % 2 == 0);
         require(sales[sale_hash].state == State.NOT_STARTED);
 
         Sale memory sale; // "memory" creates zero values, "storage" does not.
                           // also, we assign to the global storage `sales` at
                           // the end...! Ok...?
-        sale.offer = msg.value / 2;
+        sale.offer = available / 2;
         sale.state = State.STARTED;
 
         Participant memory buyer;
@@ -137,10 +159,20 @@ contract SignalSale {
     }
 
     function accept(bytes32 sale_hash) public payable {
+        uint available = msg.value;
+        BondStatus bond = bonds[msg.sender];
+        require(bond != BondStatus.LAPSED);
+        if (bond == BondStatus.NEVER_BONDED) {
+            if (msg.value < BOND) {
+                revert();
+            }
+            available -= BOND;
+            bond = BondStatus.CURRENTLY_BONDED;
+        }
         Sale memory sale = sales[sale_hash];
         require(sale.seller._address == msg.sender);
         require(sale.state == State.STARTED);
-        require(sale.offer == msg.value);
+        require(sale.offer == available);
         // The seller has an _implicit_ deposit, by the rules of the game. No
         // need to track.
         sale.state = State.ACCEPTED;
@@ -253,6 +285,12 @@ contract SignalSale {
         caller.balance = 0;
         caller._address.transfer(to_caller);
         sales[sale_hash] = sale;
+    }
+
+    function withdrawBond() public {
+        require (bonds[msg.sender] == BondStatus.CURRENTLY_BONDED);
+        bonds[msg.sender] = BondStatus.LAPSED;
+        payable(msg.sender).transfer(BOND);
     }
 }
 
