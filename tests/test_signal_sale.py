@@ -113,87 +113,87 @@ def get_sale_dict(sale):
 
 @pytest.fixture
 def deployed(params):
-    globals().update({'sale_contract': deployer.deploy(SignalSale)})
+    globals().update({'sale': deployer.deploy(SignalSale)})
     # FIXME: At this point LHS state=None and RHS state=0, but this passes.
     # The following line SHOULD be required!
     expected_sale['state'] = NOT_STARTED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def started(deployed):
-    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
+    sale.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
     expected_sale['offer'] = offer
     expected_sale['buyer']['_address'] = buyer.address
     expected_sale['buyer']['happy'] = True
     expected_sale['seller']['_address'] = seller.address
     expected_sale['seller']['happy'] = True
     expected_sale['state'] = STARTED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def accepted(started):
-    sale_contract.accept(sale_hash, {'from': seller, 'value': deposit + bond})
+    sale.accept(sale_hash, {'from': seller, 'value': deposit + bond})
     expected_sale['state'] = ACCEPTED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def canceled(started):
-    sale_contract.cancel(sale_hash, {'from': buyer})
+    sale.cancel(sale_hash, {'from': buyer})
     expected_sale['buyer']['balance'] = offer + deposit;
     expected_sale['state'] = CANCELED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def finalized(accepted):
-    sale_contract.finalize(sale_hash, buyer_signal.signal_hash, {'from': buyer})
+    sale.finalize(sale_hash, buyer_signal.signal_hash, {'from': buyer})
     expected_sale['buyer']['signal_hash'] = HexString(buyer_signal.signal_hash.hex(), 'bytes32')
     expected_sale['state'] = FINALIZED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def signaled(finalized):
-    sale_contract.sellerSignals(sale_hash, seller_signal.signal_hash, {'from': seller})
+    sale.sellerSignals(sale_hash, seller_signal.signal_hash, {'from': seller})
     expected_sale['seller']['signal_hash'] = HexString(seller_signal.signal_hash.hex(), 'bytes32')
     expected_sale['state'] = SIGNALED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def revealed(signaled):
-    sale_contract.reveal(sale_hash, seller_signal.salt, seller_signal.signal, seller_signal.happy, {'from': seller})
+    sale.reveal(sale_hash, seller_signal.salt, seller_signal.signal, seller_signal.happy, {'from': seller})
     expected_sale['seller']['revealed'] = True
     expected_sale['seller']['signal'] = seller_signal.signal
     expected_sale['seller']['happy'] = seller_signal.happy
     expected_sale['seller']['balance'] -= seller_signal.signal
     expected_sale['buyer']['balance'] += deposit # buyer's deposit
     expected_sale['buyer']['balance'] += seller_signal.signal if seller_signal.happy else 0
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
-    sale_contract.reveal(sale_hash, buyer_signal.salt, buyer_signal.signal, buyer_signal.happy, {'from': buyer})
+    sale.reveal(sale_hash, buyer_signal.salt, buyer_signal.signal, buyer_signal.happy, {'from': buyer})
     expected_sale['buyer']['revealed'] = True
     expected_sale['buyer']['signal'] = buyer_signal.signal
     expected_sale['buyer']['happy'] = buyer_signal.happy
     expected_sale['buyer']['balance'] -= buyer_signal.signal
     expected_sale['seller']['balance'] += offer + deposit # seller's deposit
     expected_sale['seller']['balance'] += buyer_signal.signal if buyer_signal.happy else 0
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 
 @pytest.fixture
 def withdrawn(revealed):
-    sale_contract.withdraw(sale_hash, {'from': seller})
+    sale.withdraw(sale_hash, {'from': seller})
     expected_sale['seller']['balance'] = 0
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
-    sale_contract.withdraw(sale_hash, {'from': buyer})
+    sale.withdraw(sale_hash, {'from': buyer})
     expected_sale['buyer']['balance'] = 0
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 @pytest.fixture
 def bond_withdrawn(withdrawn):
-    sale_contract.withdrawBond({'from': seller})
-    assert(sale_contract.bonds(seller) == LAPSED)
-    sale_contract.withdrawBond({'from': buyer})
-    assert(sale_contract.bonds(buyer) == LAPSED)
+    sale.withdrawBond({'from': seller})
+    assert(sale.bonds(seller) == LAPSED)
+    sale.withdrawBond({'from': buyer})
+    assert(sale.bonds(buyer) == LAPSED)
 
 
 # These just exist to force the above fixtures to run. Any fixtures that are
@@ -210,19 +210,19 @@ def test_bond_withdrawn_fixture(bond_withdrawn): pass
 
 def test_canceled_withdrawl(started):
     with reverts():
-        sale_contract.cancel(sale_hash, {'from': seller})
-    sale_contract.cancel(sale_hash, {'from': buyer})
+        sale.cancel(sale_hash, {'from': seller})
+    sale.cancel(sale_hash, {'from': buyer})
     expected_sale['buyer']['balance'] = offer + deposit;
     expected_sale['state'] = CANCELED
-    assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+    assert(get_sale_dict(sale.sales(sale_hash)) == expected_sale)
 
 def test_start_same_sale_hash(started):
     with reverts():
-        sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
+        sale.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
 
 def test_deposit_and_offer_odd(deployed):
     with reverts():
-        sale_contract.start(sale_hash, seller, {'from': buyer, 'value': (offer + deposit + 1) + bond})
+        sale.start(sale_hash, seller, {'from': buyer, 'value': (offer + deposit + 1) + bond})
 
 def test_start_lapsed_bond(bond_withdrawn):
     # Buyer starts sale successfully (and is bonded).
@@ -230,4 +230,4 @@ def test_start_lapsed_bond(bond_withdrawn):
     # Buyer tries to start a _2nd_ sale after withdrawing (and therefore LAPSED).
     new_sale_hash = HexString('0x1234beefc0ff1e', 'bytes32')
     with reverts():
-        sale_contract.start(new_sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
+        sale.start(new_sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
