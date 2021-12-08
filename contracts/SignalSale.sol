@@ -174,16 +174,14 @@ contract SignalSale {
         // The seller has an _implicit_ deposit, by the rules of the game. No
         // need to track.
         sale.state = State.ACCEPTED;
-        sales[sale_hash] = sale;
     }
 
     function finalize(bytes32 sale_hash, bytes32 signal_hash) public {
-        Sale memory sale = sales[sale_hash];
+        Sale storage sale = sales[sale_hash];
         require(sale.buyer._address == msg.sender);
         require(sale.state == State.ACCEPTED);
         sale.state = State.FINALIZED;
         sale.buyer.signal_hash = signal_hash;
-        sales[sale_hash] = sale;
     }
 
     function cancel(bytes32 sale_hash) public {
