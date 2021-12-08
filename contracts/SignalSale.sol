@@ -167,7 +167,7 @@ contract SignalSale {
             available -= BOND;
             bonds[msg.sender] = BondStatus.CURRENTLY_BONDED;
         }
-        Sale memory sale = sales[sale_hash];
+        Sale storage sale = sales[sale_hash];
         require(sale.seller._address == msg.sender);
         require(sale.state == State.STARTED);
         require(sale.offer == available);
