@@ -113,7 +113,7 @@ contract SignalSale {
 
     uint constant BOND = 100; // pretty cheap!
 
-    mapping(bytes32 => Sale) public sales; // pretty sure we want private
+    mapping(bytes32 => Sale) private sales;
 
     enum BondStatus {
         NEVER_BONDED,
@@ -121,7 +121,7 @@ contract SignalSale {
         LAPSED // "WAS_BONDED"??
     }
 
-    mapping(address => BondStatus) public bonds;
+    mapping(address => BondStatus) private bonds;
 
     function start(bytes32 sale_hash, address payable seller_address) public
         payable {
@@ -288,6 +288,10 @@ contract SignalSale {
         bonds[msg.sender] = BondStatus.LAPSED;
         payable(msg.sender).transfer(BOND);
     }
+
+    // These are ugly! `sales` and `bonds` want to be "private". We need getters in order to read them in tests.
+    function _sale(bytes32 sale_hash) public returns (Sale memory) { return sales[sale_hash]; }
+    function _bond(address _address) public returns (BondStatus) { return bonds[_address]; }
 }
 
 // ## Stuff that was on the top but now is on the bottom:
