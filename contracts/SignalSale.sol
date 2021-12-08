@@ -111,7 +111,7 @@ contract SignalSale {
         Participant seller;
     }
 
-    uint constant BOND = 0; // pretty cheap!
+    uint constant BOND = 100; // pretty cheap!
 
     mapping(bytes32 => Sale) public sales; // pretty sure we want private
 
@@ -193,12 +193,10 @@ contract SignalSale {
         require(sales[sale_hash].state == State.STARTED);
         // These should be impossible. We leave them in as suspenders.
         assert(sales[sale_hash].seller.balance == 0);
-        // this.balance == offer + buyer.deposit == 2 * offer
-        assert(sales[sale_hash].offer * 2 == address(this).balance);
 
         Sale memory sale = sales[sale_hash];
         sale.state = State.CANCELED;
-        sale.buyer.balance = int(address(this).balance);
+        sale.buyer.balance = int(sales[sale_hash].offer * 2);
         sales[sale_hash] = sale;
     }
 

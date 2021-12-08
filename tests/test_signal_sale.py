@@ -48,6 +48,7 @@ def params():
         'happy': False
     }, _seller)
 
+    _bond = 100
 
     _expected_sale = {
         'state': None,
@@ -78,6 +79,7 @@ def params():
         'offer': _start_value / 2,
         'deposit': _start_value / 2,
         'deployer': _deployer,
+        'bond': _bond,
         'buyer': _buyer,
         'seller': _seller,
         # This is just "any bytes32". Hardcoded for now.
@@ -115,7 +117,7 @@ def deployed(params):
 
 @pytest.fixture
 def started(deployed):
-    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit})
+    sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
     expected_sale['offer'] = offer
     expected_sale['buyer']['_address'] = buyer.address
     expected_sale['buyer']['happy'] = True
@@ -126,7 +128,7 @@ def started(deployed):
 
 @pytest.fixture
 def accepted(started):
-    sale_contract.accept(sale_hash, {'from': seller, 'value': deposit})
+    sale_contract.accept(sale_hash, {'from': seller, 'value': deposit + bond})
     expected_sale['state'] = ACCEPTED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
