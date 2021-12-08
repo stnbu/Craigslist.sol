@@ -111,7 +111,7 @@ contract SignalSale {
         Participant seller;
     }
 
-    uint constant BOND = 100; // pretty cheap!
+    uint constant BOND = 0; // pretty cheap!
 
     mapping(bytes32 => Sale) public sales; // pretty sure we want private
 
