@@ -127,14 +127,13 @@ contract SignalSale {
         payable {
 
         uint available = msg.value;
-        BondStatus bond = bonds[msg.sender];
-        require(bond != BondStatus.LAPSED);
-        if (bond == BondStatus.NEVER_BONDED) {
+        require(bonds[msg.sender] != BondStatus.LAPSED);
+        if (bonds[msg.sender] == BondStatus.NEVER_BONDED) {
             if (msg.value < BOND) {
                 revert();
             }
             available -= BOND;
-            bond = BondStatus.CURRENTLY_BONDED;
+            bonds[msg.sender] = BondStatus.CURRENTLY_BONDED;
         }
 
         require(available % 2 == 0);
@@ -160,14 +159,13 @@ contract SignalSale {
 
     function accept(bytes32 sale_hash) public payable {
         uint available = msg.value;
-        BondStatus bond = bonds[msg.sender];
-        require(bond != BondStatus.LAPSED);
-        if (bond == BondStatus.NEVER_BONDED) {
+        require(bonds[msg.sender] != BondStatus.LAPSED);
+        if (bonds[msg.sender] == BondStatus.NEVER_BONDED) {
             if (msg.value < BOND) {
                 revert();
             }
             available -= BOND;
-            bond = BondStatus.CURRENTLY_BONDED;
+            bonds[msg.sender] = BondStatus.CURRENTLY_BONDED;
         }
         Sale memory sale = sales[sale_hash];
         require(sale.seller._address == msg.sender);

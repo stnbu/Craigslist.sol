@@ -13,6 +13,10 @@ FINALIZED = 3
 SIGNALED = 4
 CANCELED = 5
 
+NEVER_BONDED = 0
+CURRENTLY_BONDED = 1
+LAPSED = 2
+
 def fhex(n):
     return '0x' + n.hex()
 
@@ -184,6 +188,13 @@ def withdrawn(revealed):
     expected_sale['buyer']['balance'] = 0
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
 
+@pytest.fixture
+def bond_withdrawn(withdrawn):
+    sale_contract.withdrawBond({'from': seller})
+    assert(sale_contract.bonds(seller) == LAPSED)
+    sale_contract.withdrawBond({'from': buyer})
+    assert(sale_contract.bonds(buyer) == LAPSED)
+
 
 # These just exist to force the above fixtures to run. Any fixtures that are
 # used elsewhere can be removed from the below wrappers.
@@ -195,6 +206,7 @@ def test_finalized_fixture(finalized): pass
 def test_signaled_fixture(signaled): pass
 def test_revealed_fixture(revealed): pass
 def test_withdrawn_fixture(withdrawn): pass
+def test_bond_withdrawn_fixture(bond_withdrawn): pass
 
 def test_canceled_withdrawl(started):
     with reverts():
@@ -203,3 +215,19 @@ def test_canceled_withdrawl(started):
     expected_sale['buyer']['balance'] = offer + deposit;
     expected_sale['state'] = CANCELED
     assert(get_sale_dict(sale_contract.sales(sale_hash)) == expected_sale)
+
+def test_start_same_sale_hash(started):
+    with reverts():
+        sale_contract.start(sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
+
+def test_deposit_and_offer_odd(deployed):
+    with reverts():
+        sale_contract.start(sale_hash, seller, {'from': buyer, 'value': (offer + deposit + 1) + bond})
+
+def test_start_lapsed_bond(bond_withdrawn):
+    # Buyer starts sale successfully (and is bonded).
+    # Buyer withdrawls bond.
+    # Buyer tries to start a _2nd_ sale after withdrawing (and therefore LAPSED).
+    new_sale_hash = HexString('0x1234beefc0ff1e', 'bytes32')
+    with reverts():
+        sale_contract.start(new_sale_hash, seller, {'from': buyer, 'value': offer + deposit + bond})
