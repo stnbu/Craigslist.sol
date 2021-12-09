@@ -223,8 +223,6 @@ contract SignalSale {
 
     function reveal(bytes32 sale_hash, bytes32 secret, uint signal, bool happy)
         public {
-        // FIXME: see https://docs.soliditylang.org/en/v0.8.9/abi-spec.html
-        // "Warning: If you use ...encodePacked"
         Sale memory sale = sales[sale_hash];
         require(sale.state == State.SIGNALED);
 
