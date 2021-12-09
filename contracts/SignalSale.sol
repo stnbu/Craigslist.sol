@@ -17,8 +17,8 @@ contract SignalSale {
     // 3) The buyer calls `finalize`, along with their "signal hash". By calling
     // `finalize` the buyer is indicating that the item has been received OR
     //  they have given up on the seller ever coming through. `signal_hash` is
-    // `keccak256(abi.encodePacked(salt, signal, happy))` where,
-    //   * `salt` is some random bytes (which must be retained by the buyer!)
+    // `keccak256(abi.encodePacked(secret, signal, happy))` where,
+    //   * `secret` is some random bytes (which must be retained by the buyer!)
     //   * `signal` is a positive integer to be "burned" as a signal. This is
     //      the signal's "magnitude".
     //   * `happy` is a boolean, This is the signal's "sign": happy means the
@@ -98,10 +98,8 @@ contract SignalSale {
         uint signal;
         bool happy;
         bytes32 signal_hash;
-        bytes32 salt;
-        int balance; // Signed because we need to allow negative balance
-                      // (before withdrawl at which point it must be >=0 or we
-                      // have broken logic.)
+        bytes32 secret;
+        int balance;
     }
 
     struct Sale {
@@ -111,14 +109,14 @@ contract SignalSale {
         Participant seller;
     }
 
-    uint constant BOND = 100; // pretty cheap!
+    uint constant BOND = 100;
 
     mapping(bytes32 => Sale) private sales;
 
     enum BondStatus {
         NEVER_BONDED,
         CURRENTLY_BONDED,
-        LAPSED // "WAS_BONDED"??
+        LAPSED
     }
 
     mapping(address => BondStatus) private bonds;
@@ -139,9 +137,7 @@ contract SignalSale {
         require(available % 2 == 0);
         require(sales[sale_hash].state == State.NOT_STARTED);
 
-        Sale memory sale; // "memory" creates zero values, "storage" does not.
-                          // also, we assign to the global storage `sales` at
-                          // the end...! Ok...?
+        Sale memory sale;
         sale.offer = available / 2;
         sale.state = State.STARTED;
 
@@ -190,19 +186,17 @@ contract SignalSale {
         // These should be impossible. We leave them in as suspenders.
         assert(sales[sale_hash].seller.balance == 0);
 
-        Sale memory sale = sales[sale_hash];
+        Sale storage sale = sales[sale_hash];
         sale.state = State.CANCELED;
         sale.buyer.balance = int(sales[sale_hash].offer * 2);
-        sales[sale_hash] = sale;
     }
 
     function sellerSignals(bytes32 sale_hash, bytes32 signal_hash) public {
-        Sale memory sale = sales[sale_hash];
+        Sale storage sale = sales[sale_hash];
         require(sale.seller._address == msg.sender);
         require(sale.state == State.FINALIZED);
         sale.seller.signal_hash = signal_hash;
         sale.state = State.SIGNALED;
-        sales[sale_hash] = sale;
     }
 
     function thisParticipant(Sale memory sale) private
@@ -227,7 +221,7 @@ contract SignalSale {
         }
     }
 
-    function reveal(bytes32 sale_hash, bytes32 salt, uint signal, bool happy)
+    function reveal(bytes32 sale_hash, bytes32 secret, uint signal, bool happy)
         public {
         // FIXME: see https://docs.soliditylang.org/en/v0.8.9/abi-spec.html
         // "Warning: If you use ...encodePacked"
@@ -238,7 +232,7 @@ contract SignalSale {
         Participant memory caller = thisParticipant(sale);
 
         require(caller.signal_hash ==
-                keccak256(abi.encodePacked(salt, signal, happy)));
+                keccak256(abi.encodePacked(secret, signal, happy)));
         caller.revealed = true;
         caller.signal = signal;
         caller.happy = happy;
@@ -259,6 +253,7 @@ contract SignalSale {
             other.balance += int(signal);
         }
         sales[sale_hash] = sale;
+	// wat! I never do a `sales[sale_hash].foobbar = caller`
     }
 
     function withdraw(bytes32 sale_hash) public {

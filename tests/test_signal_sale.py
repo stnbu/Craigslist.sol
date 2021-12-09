@@ -30,7 +30,7 @@ def params():
                 self.helpers = account.deploy(SolidityHelpers)
             self.__dict__.update(hash_inputs)
             tx = self.helpers.getSignalHash(
-                self.salt,
+                self.secret,
                 self.signal,
                 self.happy,
                 {'from': account})
@@ -41,13 +41,13 @@ def params():
     _seller = accounts[2]
 
     _buyer_signal = ParticipantSignal({
-        'salt': HexString('0xb10beef', 'bytes32'),
+        'secret': HexString('0xb10beef', 'bytes32'),
         'signal': Wei(1),
         'happy': True
     }, _buyer)
 
     _seller_signal = ParticipantSignal({
-        'salt': HexString('0xbadbeef', 'bytes32'),
+        'secret': HexString('0xbadbeef', 'bytes32'),
         'signal': Wei(1),
         'happy': False
     }, _seller)
@@ -62,7 +62,7 @@ def params():
             'balance': Wei(0),
             'happy': False,
             'revealed': False,
-            'salt': HexString('0x0', 'bytes32'),
+            'secret': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
             'signal_hash': HexString('0x0', 'bytes32'),
         },
@@ -71,7 +71,7 @@ def params():
             'balance': Wei(0),
             'happy': False,
             'revealed': False,
-            'salt': HexString('0x0', 'bytes32'),
+            'secret': HexString('0x0', 'bytes32'),
             'signal': Wei(0),
             'signal_hash': HexString('0x0', 'bytes32'),
         },
@@ -103,7 +103,7 @@ def get_sale_dict(sale):
     offer, state, b, s = sale.return_value
     participant_fields = (
         '_address', 'revealed', 'signal',
-        'happy', 'signal_hash', 'salt', 'balance')
+        'happy', 'signal_hash', 'secret', 'balance')
     return {
         'offer': offer,
         'state': state,
@@ -159,7 +159,7 @@ def signaled(finalized):
 
 @pytest.fixture
 def revealed(signaled):
-    sale.reveal(sale_hash, seller_signal.salt, seller_signal.signal, seller_signal.happy, {'from': seller})
+    sale.reveal(sale_hash, seller_signal.secret, seller_signal.signal, seller_signal.happy, {'from': seller})
     expected_sale['seller']['revealed'] = True
     expected_sale['seller']['signal'] = seller_signal.signal
     expected_sale['seller']['happy'] = seller_signal.happy
@@ -168,7 +168,7 @@ def revealed(signaled):
     expected_sale['buyer']['balance'] += seller_signal.signal if seller_signal.happy else 0
     assert(get_sale_dict(sale._sale(sale_hash)) == expected_sale)
 
-    sale.reveal(sale_hash, buyer_signal.salt, buyer_signal.signal, buyer_signal.happy, {'from': buyer})
+    sale.reveal(sale_hash, buyer_signal.secret, buyer_signal.signal, buyer_signal.happy, {'from': buyer})
     expected_sale['buyer']['revealed'] = True
     expected_sale['buyer']['signal'] = buyer_signal.signal
     expected_sale['buyer']['happy'] = buyer_signal.happy
