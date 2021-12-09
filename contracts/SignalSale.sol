@@ -6,8 +6,9 @@ contract SignalSale {
     //
     // 1) Buyer starts a sale with a pre-arranged "sale hash" and the seller's
     // address as input. The value sent to `start` must be twice the intended
-    // offer: half becomes the offer and the other half becomes he buyer's
-    // deposit.
+    // offer _plus_ a (hardcoded) bond if using the system for the first
+    // time: After subtracting the bond, half of what's left becomes the "offer"
+    // and the other half becomes he buyer's deposit.
     // 2) After the sale is started...
     //   a) Seller calls `approve` sending their deposit, which must equal the
     //      offer. Calling `approve` means the seller intends to transfer
@@ -34,51 +35,6 @@ contract SignalSale {
     // signal to punish the other for an "unjust signal".
     // 6) The buyer and seller both call `withdraw`, which permits them to
     // withdraw funds, after adjustments for "signaling".
-
-    // Important:
-    //
-    // When either party chooses a `signal` greater than zero, that money is
-    // _taken from them_! Participants in "nominal" sales are incentivized to
-    // set `signal=0`, which renders `happy` meaningless and maximizes their
-    // outcomes.
-    //
-    // On first impression, it may seems absurd for a user to voluntarily give
-    // up some of their deposit, especially if it is simply burnt, but imagine a
-    // few scenarios:
-    //
-    // Example:
-    //
-    // You are buying a $200 guitar from a seller who has 2000 sales and no
-    // unhappy signals. Most of these sales were made in the last year, some of
-    // them for large amounts of money. All signs point to this being a safe
-    // bet. After all, it's only a $200 guitar. Seems like a reasonable bet.
-    //
-    // Suppose you go through with this sale and it becomes apparent that this
-    // user clearly acts unfairly and it's apparent (somehow) that you simply
-    // just got ripped off by this sparkling clean user... what would you do?
-    //
-    // Would you swear off the system forever? What if the last 300 sales of
-    // this seller were all $200 guitars and all ended with no unhappies and
-    // they were all in the last month. Why would you be hesitant? You can trust
-    // the values on the system because they are all signed by the relevant
-    // keys.
-    //
-    // You can even examine the balance of buyers' wallets at the time of sale
-    // to get a gauge on how "big" the players are. You can also examine the
-    // reputation of these buyers.  An experienced, reputable buyer that
-    // understands how the system works would not hesitate to signal unhappy to
-    // some extent if they were screwed over a $200 guitar.
-    //
-    // You have no recourse. There is nothing else you can do but vote with a
-    // few of you $200 (which you laid down as a deposit when you called
-    // `start`.) And obviously, for you, `happy != true`, so you choose to be
-    // the first of 2001 sales to cast a negative vote and significantly ding
-    // this seller's reputation. BAM! You burn $5 in the direction of this
-    // newly-sketchy seller.
-    //
-    // Not only does this hurt the seller, but many purchases down the road, it
-    // becomes clear that you are a good-faith actor. That penalty increases in
-    // value in proportion to your reputation.
 
     enum State {
         NOT_STARTED,
@@ -284,58 +240,3 @@ contract SignalSale {
     function _sale(bytes32 sale_hash) public returns (Sale memory) { return sales[sale_hash]; }
     function _bond(address _address) public returns (BondStatus) { return bonds[_address]; }
 }
-
-// ## Stuff that was on the top but now is on the bottom:
-//
-// [gigantic hole] There is nothing stopping e.g. a seller from writing a bot to
-// pump their ratings without end. Ooops? Might need another turtle.
-//
-// [gigantic putty] If n% of both ends' deposit got _burned_ every time, that
-// would be a dial that could be adjusted up or down. Got to burn coal to prove
-// you created bitcoin => got to burn ether to prove that you are /on/ this
-// system. Ethereum has this concept built in: gas. If we have a concept of
-// "overall commitment" requiring actors to burn some Wei in order to
-// participate, we would filter out (for the right position of "dial")
-// participants that want to use spam techniques to bump their reputation. They
-// have to pay gas costs to do this, but how sure can we be that this is enough?
-// Is there a mechanism that could 'dial this in' automatically.
-//
-// AND BY THE WAY, burning 90000 Wei with each transaction would be a lot
-// cheaper than the overhead you pay indirectly for e.g. eBay.
-//
-// [more putty] Also, the reputation of the buyer wallets in a spamming
-// situation would have to be taken into account. There could be all kinds of
-// methods to determine if participant is a botnet: do the wallets get their
-// value from the same wallets? If you grab a selection of wallets the seller
-// clams were legitimate sales, what is their _simultaneous_ balance when the
-// sale took place? In other words: if a single seller is using subterfuge to
-// make fake sales look like real sales, You should be able to do enough
-// sampling and "analysis" to figure out if all these auto-created drone wallets
-// shared the same _actual money_. If you have a million dollars, you can make
-// two 500k wallets appear at the same time, you can make two million dollar
-// wallets appear, _but not at the same time_.  The wallets of the claimed
-// "buyers" are subject to this analysis. Maybe.
-//
-// TBD:
-//
-// * What about [escrow](https://youtu.be/OZmO_7JBeao)?
-// * All data for all sales are traceable, but this data is not stored in a
-// particularly efficient way from the "traceability" point of view. This is
-// intentional: contracts should be very terse and efficient. The work required
-// to go through _millions_ of sales in this contract is minuscule for a single
-// server that has access to the blockchain. In production, a process (on a
-// server) will need to calculate helpful metrics for future prospective buyers
-// and sellers. After extraction from this contract's on-chain storage, e.g. a
-// website can present helpful metrics on a per-buyer or per-seller basis (pie
-// charts, graphs, smileys, ratios, factors...)
-// * A "client" for interacting with this contract.
-// * A whole horde of users. Addresses that have participated in many sales will
-// have a meaningful reputation. For example, a "good" seller might be one with
-// 1000 sales, all where the buyer has burned zero. A _great_ seller might be
-// someone with 10,000 sales with no burned (unhappy) signals and an average of
-// 200 Wei in "happy" signals per sale (ad infinitum). If there are sellers on
-// this system with a positive happy signal and zero negative signal and have
-// 800 sales, then that user is probably a better bet than Beanies003@eBay
-// (imho).
-// * A way to carry "reputation" with you but still leaving your original
-// identity behind. Not required, but would be cool.
